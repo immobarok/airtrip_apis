@@ -78,4 +78,11 @@ export class CreatePropertyDto {
   @IsBoolean()
   @IsOptional()
   instantBook?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
 }

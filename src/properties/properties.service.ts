@@ -35,6 +35,8 @@ export class PropertiesService {
           amenities: createPropertyDto.amenities ?? [],
           cleaningFee: createPropertyDto.cleaningFee ?? 0,
           instantBook: createPropertyDto.instantBook ?? false,
+          latitude: createPropertyDto.latitude,
+          longitude: createPropertyDto.longitude,
           status: 'draft', // Default status for new properties
         },
       });

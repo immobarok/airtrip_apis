@@ -25,6 +25,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { MediaModule } from './media/media.module';
 import { PropertiesModule } from './properties/properties.module';
+import { BookingsModule } from './bookings/bookings.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -35,6 +37,7 @@ import { PropertiesModule } from './properties/properties.module';
     CloudinaryModule,
     MediaModule,
     PropertiesModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -57,6 +60,3 @@ export class AppModule implements NestModule {
       .forRoutes('*');
   }
 }
-
-
-
