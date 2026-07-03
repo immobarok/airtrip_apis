@@ -26,6 +26,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
 import { MediaModule } from './media/media.module';
 import { PropertiesModule } from './properties/properties.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { BookingsModule } from './bookings/bookings.module';
     MediaModule,
     PropertiesModule,
     BookingsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [
