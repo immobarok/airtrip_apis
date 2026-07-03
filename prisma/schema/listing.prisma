@@ -1,0 +1,104 @@
+model Listing {
+  id     String @id @default(uuid()) @db.Uuid
+  hostId String @map("host_id") @db.Uuid
+  host   User   @relation("HostListings", fields: [hostId], references: [id], onDelete: Cascade)
+
+  title        String  @db.VarChar(200)
+  description  String? @db.Text
+  propertyType String  @map("property_type") @db.VarChar(50)
+  roomType     String  @map("room_type") @db.VarChar(50)
+
+  addressLine1  String? @map("address_line1") @db.VarChar(255)
+  addressLine2  String? @map("address_line2") @db.VarChar(255)
+  city          String  @db.VarChar(100)
+  stateProvince String? @map("state_province") @db.VarChar(100)
+  postalCode    String? @map("postal_code") @db.VarChar(20)
+  country       String  @db.VarChar(2)
+  countryName   String? @map("country_name") @db.VarChar(100)
+
+  latitude  Decimal?                               @db.Decimal(10, 8)
+  longitude Decimal?                               @db.Decimal(11, 8)
+  location  Unsupported("geography(Point, 4326)")?
+
+  maxGuests Int      @default(1) @map("max_guests")
+  bedrooms  Int?     @default(0)
+  beds      Int?     @default(1)
+  bathrooms Decimal? @default(1.0) @db.Decimal(3, 1)
+
+  amenities String[] @db.VarChar(100)
+
+  basePricePerNight Decimal  @map("base_price_per_night") @db.Decimal(10, 2)
+  cleaningFee       Decimal? @default(0) @map("cleaning_fee") @db.Decimal(10, 2)
+  serviceFeePercent Decimal? @default(12.00) @map("service_fee_percent") @db.Decimal(5, 2)
+
+  minNights    Int?      @default(1) @map("min_nights")
+  maxNights    Int?      @default(365) @map("max_nights")
+  checkInTime  DateTime? @map("check_in_time") @db.Time
+  checkOutTime DateTime? @map("check_out_time") @db.Time
+
+  houseRules  String? @map("house_rules") @db.Text
+  instantBook Boolean @default(false) @map("instant_book")
+
+  status String @default("draft") @db.VarChar(20)
+
+  totalBookings Int     @default(0) @map("total_bookings")
+  totalReviews  Int     @default(0) @map("total_reviews")
+  averageRating Decimal @default(0) @map("average_rating") @db.Decimal(2, 1)
+
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  publishedAt DateTime? @map("published_at") @db.Timestamptz
+
+  photos         ListingPhoto[]
+  availabilities ListingAvailability[]
+  bookings       Booking[]
+  reviews        Review[]
+  wishlistItems  WishlistItem[]
+
+  @@index([hostId])
+  @@index([status])
+  @@index([city, stateProvince, country])
+  @@index([basePricePerNight, status])
+  @@index([averageRating, totalReviews])
+  @@index([propertyType, roomType])
+  @@index([maxGuests, bedrooms, beds])
+  @@index([instantBook])
+  @@index([createdAt])
+  @@index([location], type: Gist, map: "idx_listings_location")
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "idx_listings_title_trgm")
+  @@index([amenities], type: Gin, map: "idx_listings_amenities")
+  @@map("listings")
+}
+
+model ListingPhoto {
+  id           String   @id @default(uuid()) @db.Uuid
+  listingId    String   @map("listing_id") @db.Uuid
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  photoUrl     String   @map("photo_url") @db.VarChar(500)
+  thumbnailUrl String?  @map("thumbnail_url") @db.VarChar(500)
+  caption      String?  @db.VarChar(255)
+  displayOrder Int?     @default(0) @map("display_order")
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([listingId])
+  @@map("listing_photos")
+}
+
+model ListingAvailability {
+  id            String   @id @default(uuid()) @db.Uuid
+  listingId     String   @map("listing_id") @db.Uuid
+  listing       Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  date          DateTime @db.Date
+  isAvailable   Boolean  @default(true) @map("is_available")
+  priceOverride Decimal? @map("price_override") @db.Decimal(10, 2)
+  minimumStay   Int?     @map("minimum_stay")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@unique([listingId, date])
+  @@index([listingId, date])
+  @@index([date])
+  @@map("listing_availability")
+}

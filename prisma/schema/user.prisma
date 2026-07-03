@@ -1,0 +1,187 @@
+model User {
+  id           String  @id @default(uuid()) @db.Uuid
+  email        String  @unique @db.VarChar(255)
+  passwordHash String  @map("password_hash") @db.VarChar(255)
+  phone        String? @db.VarChar(20)
+  firstName    String  @map("first_name") @db.VarChar(100)
+  lastName     String  @map("last_name") @db.VarChar(100)
+  avatarUrl    String? @map("avatar_url") @db.VarChar(500)
+
+  // Role flags
+  isCustomer   Boolean @default(false) @map("is_customer")
+  isHost       Boolean @default(false) @map("is_host")
+  isAdmin      Boolean @default(false) @map("is_admin")
+  isSuperAdmin Boolean @default(false) @map("is_super_admin")
+
+  // Account status
+  isActive        Boolean @default(true) @map("is_active")
+  isVerified      Boolean @default(false) @map("is_verified")
+  isEmailVerified Boolean @default(false) @map("is_email_verified")
+  isPhoneVerified Boolean @default(false) @map("is_phone_verified")
+
+  // Security
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until") @db.Timestamptz
+  lastLoginAt         DateTime? @map("last_login_at") @db.Timestamptz
+
+  // Metadata
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  // Relations
+  customerProfile   CustomerProfile?
+  hostProfile       HostProfile?
+  adminProfile      AdminProfile?
+  superAdminProfile SuperAdminProfile?
+
+  listings Listing[] @relation("HostListings")
+
+  bookingsAsGuest   Booking[] @relation("GuestBookings")
+  bookingsAsHost    Booking[] @relation("HostBookings")
+  bookingsCancelled Booking[] @relation("CancelledBookings")
+
+  paymentsAsPayer Payment[] @relation("PayerPayments")
+  paymentsAsPayee Payment[] @relation("PayeePayments")
+
+  reviewsAsReviewer Review[] @relation("ReviewerReviews")
+  reviewsAsReviewee Review[] @relation("RevieweeReviews")
+  reviewsModerated  Review[] @relation("ModeratedReviews")
+
+  conversationsAsP1 Conversation[] @relation("Participant1Conversations")
+  conversationsAsP2 Conversation[] @relation("Participant2Conversations")
+  messages          Message[]
+
+  wishlists      Wishlist[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+  systemSettings SystemSetting[]
+  mediaItems     Media[]
+
+  createdAdmins AdminProfile[] @relation("CreatedAdmins")
+
+  @@index([email])
+  @@index([phone])
+  @@index([isCustomer, isHost, isAdmin, isSuperAdmin])
+  @@index([isActive, isVerified])
+  @@index([createdAt])
+  @@index([firstName(ops: raw("gin_trgm_ops")), lastName(ops: raw("gin_trgm_ops"))], type: Gin, map: "idx_users_name_trgm")
+  @@map("users")
+}
+
+model CustomerProfile {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  preferredLanguage String? @default("en") @map("preferred_language") @db.VarChar(10)
+  preferredCurrency String? @default("USD") @map("preferred_currency") @db.VarChar(3)
+  timezone          String? @default("UTC") @db.VarChar(50)
+
+  travelStyle       String?  @map("travel_style") @db.VarChar(50)
+  accommodationType String[] @map("accommodation_type") @db.VarChar(50)
+
+  loyaltyPoints Int    @default(0) @map("loyalty_points")
+  loyaltyTier   String @default("bronze") @map("loyalty_tier") @db.VarChar(20)
+
+  emergencyName  String? @map("emergency_name") @db.VarChar(200)
+  emergencyPhone String? @map("emergency_phone") @db.VarChar(20)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@index([userId])
+  @@index([loyaltyTier, loyaltyPoints])
+  @@map("customer_profiles")
+}
+
+model HostProfile {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  isIdentityVerified Boolean   @default(false) @map("is_identity_verified")
+  governmentIdType   String?   @map("government_id_type") @db.VarChar(50)
+  governmentIdNumber String?   @map("government_id_number") @db.VarChar(100)
+  idVerifiedAt       DateTime? @map("id_verified_at") @db.Timestamptz
+
+  responseRate        Decimal @default(0) @map("response_rate") @db.Decimal(5, 2)
+  responseTimeMinutes Int     @default(0) @map("response_time_minutes")
+  acceptanceRate      Decimal @default(0) @map("acceptance_rate") @db.Decimal(5, 2)
+  cancellationRate    Decimal @default(0) @map("cancellation_rate") @db.Decimal(5, 2)
+
+  totalListings Int     @default(0) @map("total_listings")
+  totalBookings Int     @default(0) @map("total_bookings")
+  totalReviews  Int     @default(0) @map("total_reviews")
+  averageRating Decimal @default(0) @map("average_rating") @db.Decimal(2, 1)
+
+  payoutMethod   String? @map("payout_method") @db.VarChar(50)
+  payoutCurrency String  @default("USD") @map("payout_currency") @db.VarChar(3)
+  taxId          String? @map("tax_id") @db.VarChar(100)
+
+  hostStatus String   @default("active") @map("host_status") @db.VarChar(20)
+  hostSince  DateTime @default(now()) @map("host_since") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@index([userId])
+  @@index([hostStatus, isIdentityVerified])
+  @@index([averageRating, totalReviews])
+  @@map("host_profiles")
+}
+
+model AdminProfile {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  employeeId String? @unique @map("employee_id") @db.VarChar(50)
+  department String? @db.VarChar(50)
+  jobTitle   String? @map("job_title") @db.VarChar(100)
+
+  canManageUsers    Boolean @default(false) @map("can_manage_users")
+  canManageListings Boolean @default(false) @map("can_manage_listings")
+  canManageBookings Boolean @default(false) @map("can_manage_bookings")
+  canManagePayments Boolean @default(false) @map("can_manage_payments")
+  canManageReviews  Boolean @default(false) @map("can_manage_reviews")
+  canViewAnalytics  Boolean @default(false) @map("can_view_analytics")
+  canManageAdmins   Boolean @default(false) @map("can_manage_admins")
+
+  adminStatus String @default("active") @map("admin_status") @db.VarChar(20)
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  createdById String?  @map("created_by") @db.Uuid
+  createdBy   User?    @relation("CreatedAdmins", fields: [createdById], references: [id])
+
+  superAdminProfile SuperAdminProfile?
+
+  @@index([userId])
+  @@index([adminStatus])
+  @@index([department])
+  @@map("admin_profiles")
+}
+
+model SuperAdminProfile {
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @unique @map("user_id") @db.Uuid
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminProfileId String       @unique @map("admin_profile_id") @db.Uuid
+  adminProfile   AdminProfile @relation(fields: [adminProfileId], references: [id], onDelete: Cascade)
+
+  accessLevel             Int     @default(10) @map("access_level")
+  canCreateAdmins         Boolean @default(true) @map("can_create_admins")
+  canDeleteAdmins         Boolean @default(true) @map("can_delete_admins")
+  canModifySystemSettings Boolean @default(true) @map("can_modify_system_settings")
+  canAccessAuditLogs      Boolean @default(true) @map("can_access_audit_logs")
+
+  twoFactorEnabled  Boolean   @default(true) @map("two_factor_enabled")
+  lastSecurityAudit DateTime? @map("last_security_audit") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@index([userId])
+  @@map("super_admin_profiles")
+}

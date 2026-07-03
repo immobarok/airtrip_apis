@@ -1,0 +1,40 @@
+enum BookingStatus {
+  PENDING            @map("pending")
+  CONFIRMED          @map("confirmed")
+  CHECKED_IN         @map("checked_in")
+  CHECKED_OUT        @map("checked_out")
+  CANCELLED_BY_GUEST @map("cancelled_by_guest")
+  CANCELLED_BY_HOST  @map("cancelled_by_host")
+  CANCELLED_BY_ADMIN @map("cancelled_by_admin")
+  NO_SHOW            @map("no_show")
+}
+
+enum PaymentStatus {
+  PENDING            @map("pending")
+  PROCESSING         @map("processing")
+  COMPLETED          @map("completed")
+  FAILED             @map("failed")
+  REFUNDED           @map("refunded")
+  PARTIALLY_REFUNDED @map("partially_refunded")
+}
+
+enum PaymentMethod {
+  CREDIT_CARD   @map("credit_card")
+  DEBIT_CARD    @map("debit_card")
+  PAYPAY        @map("paypal")
+  APPLE_PAY     @map("apple_pay")
+  GOOGLE_PAY    @map("google_pay")
+  BANK_TRANSFER @map("bank_transfer")
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMED   @map("booking_confirmed")
+  BOOKING_CANCELLED   @map("booking_cancelled")
+  BOOKING_REMINDER    @map("booking_reminder")
+  MESSAGE_RECEIVED    @map("message_received")
+  REVIEW_RECEIVED     @map("review_received")
+  PAYMENT_RECEIVED    @map("payment_received")
+  LISTING_APPROVED    @map("listing_approved")
+  LISTING_REJECTED    @map("listing_rejected")
+  SYSTEM_ANNOUNCEMENT @map("system_announcement")
+}

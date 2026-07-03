@@ -1,0 +1,86 @@
+model Booking {
+  id               String @id @default(uuid()) @db.Uuid
+  bookingReference String @unique @map("booking_reference") @db.VarChar(20)
+
+  listingId String  @map("listing_id") @db.Uuid
+  listing   Listing @relation(fields: [listingId], references: [id])
+  guestId   String  @map("guest_id") @db.Uuid
+  guest     User    @relation("GuestBookings", fields: [guestId], references: [id])
+  hostId    String  @map("host_id") @db.Uuid
+  host      User    @relation("HostBookings", fields: [hostId], references: [id])
+
+  checkInDate  DateTime @map("check_in_date") @db.Date
+  checkOutDate DateTime @map("check_out_date") @db.Date
+
+  numberOfGuests  Int      @default(1) @map("number_of_guests")
+  guestNames      String[] @map("guest_names")
+  specialRequests String?  @map("special_requests") @db.Text
+
+  nightlyRate    Decimal  @map("nightly_rate") @db.Decimal(10, 2)
+  numberOfNights Int      @map("number_of_nights")
+  subtotal       Decimal  @db.Decimal(10, 2)
+  cleaningFee    Decimal? @default(0) @map("cleaning_fee") @db.Decimal(10, 2)
+  serviceFee     Decimal  @map("service_fee") @db.Decimal(10, 2)
+  taxAmount      Decimal? @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  totalAmount    Decimal  @map("total_amount") @db.Decimal(10, 2)
+
+  currency String?       @default("USD") @db.VarChar(3)
+  status   BookingStatus @default(PENDING)
+
+  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz
+  cancelledById      String?   @map("cancelled_by") @db.Uuid
+  cancelledBy        User?     @relation("CancelledBookings", fields: [cancelledById], references: [id])
+  cancellationReason String?   @map("cancellation_reason") @db.Text
+  refundAmount       Decimal?  @map("refund_amount") @db.Decimal(10, 2)
+
+  actualCheckIn  DateTime? @map("actual_check_in") @db.Timestamptz
+  actualCheckOut DateTime? @map("actual_check_out") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  payments      Payment[]
+  reviews       Review[]
+  conversations Conversation[]
+
+  @@index([guestId])
+  @@index([hostId])
+  @@index([listingId])
+  @@index([status])
+  @@index([checkInDate, checkOutDate])
+  @@index([bookingReference])
+  @@map("bookings")
+}
+
+model Payment {
+  id        String  @id @default(uuid()) @db.Uuid
+  bookingId String  @map("booking_id") @db.Uuid
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  payerId String @map("payer_id") @db.Uuid
+  payer   User   @relation("PayerPayments", fields: [payerId], references: [id])
+  payeeId String @map("payee_id") @db.Uuid
+  payee   User   @relation("PayeePayments", fields: [payeeId], references: [id])
+
+  amount   Decimal @db.Decimal(10, 2)
+  currency String? @default("USD") @db.VarChar(3)
+
+  paymentMethod PaymentMethod @map("payment_method")
+  paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+
+  processor          String? @db.VarChar(50)
+  processorPaymentId String? @map("processor_payment_id") @db.VarChar(255)
+
+  paidAt     DateTime? @map("paid_at") @db.Timestamptz
+  refundedAt DateTime? @map("refunded_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@index([bookingId])
+  @@index([payerId])
+  @@index([payeeId])
+  @@index([paymentStatus])
+  @@index([processor, processorPaymentId])
+  @@map("payments")
+}

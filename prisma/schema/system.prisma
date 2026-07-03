@@ -1,0 +1,70 @@
+model Notification {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  title   String           @db.VarChar(255)
+  message String           @db.Text
+
+  actionUrl         String? @map("action_url") @db.VarChar(500)
+  relatedEntityType String? @map("related_entity_type") @db.VarChar(50)
+  relatedEntityId   String? @map("related_entity_id") @db.Uuid
+
+  isRead Boolean   @default(false) @map("is_read")
+  readAt DateTime? @map("read_at") @db.Timestamptz
+
+  sentEmail Boolean @default(false) @map("sent_email")
+  sentPush  Boolean @default(false) @map("sent_push")
+  sentSms   Boolean @default(false) @map("sent_sms")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([userId])
+  @@index([type])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        BigInt  @id @default(autoincrement())
+  actorId   String? @map("actor_id") @db.Uuid
+  actor     User?   @relation(fields: [actorId], references: [id])
+  actorRole String? @map("actor_role") @db.VarChar(20)
+
+  action     String  @db.VarChar(50)
+  entityType String  @map("entity_type") @db.VarChar(50)
+  entityId   String? @map("entity_id") @db.Uuid
+
+  oldValues     Json?   @map("old_values")
+  newValues     Json?   @map("new_values")
+  changeSummary String? @map("change_summary") @db.Text
+
+  ipAddress String? @map("ip_address") @db.VarChar(45)
+  userAgent String? @map("user_agent") @db.Text
+  requestId String? @map("request_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  id           String  @id @default(uuid()) @db.Uuid
+  settingKey   String  @unique @map("setting_key") @db.VarChar(100)
+  settingValue String  @map("setting_value") @db.Text
+  valueType    String? @default("string") @map("value_type") @db.VarChar(20)
+  description  String? @db.Text
+  isEditable   Boolean @default(true) @map("is_editable")
+
+  modifiedById String? @map("modified_by") @db.Uuid
+  modifiedBy   User?   @relation(fields: [modifiedById], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("system_settings")
+}

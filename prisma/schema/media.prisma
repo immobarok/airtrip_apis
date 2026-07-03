@@ -1,0 +1,43 @@
+model Media {
+  id         String @id @default(uuid()) @db.Uuid
+  uploaderId String @map("uploader_id") @db.Uuid
+  uploader   User   @relation(fields: [uploaderId], references: [id])
+
+  filename     String        @db.VarChar(255)
+  originalName String        @map("original_name") @db.VarChar(255)
+  mimeType     String        @map("mime_type") @db.VarChar(50)
+  extension    String        @db.VarChar(20)
+  size         Int
+  category     MediaCategory
+
+  url    String  @db.VarChar(500)
+  alt    String? @db.VarChar(255)
+  title  String? @db.VarChar(255)
+  folder String? @db.VarChar(100)
+
+  width       Int?
+  height      Int?
+  aspectRatio Decimal? @map("aspect_ratio") @db.Decimal(5, 2)
+  productId   String?  @map("product_id") @db.Uuid
+
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@index([uploaderId])
+  @@index([folder])
+  @@index([category])
+  @@index([isDeleted])
+  @@map("media")
+}
+
+enum MediaCategory {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  ARCHIVE
+  OTHER
+}
