@@ -1,5 +1,5 @@
 model User {
-  id           String  @id @default(uuid()) @db.Uuid
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email        String  @unique @db.VarChar(255)
   passwordHash String  @map("password_hash") @db.VarChar(255)
   phone        String? @db.VarChar(20)
@@ -70,7 +70,7 @@ model User {
 }
 
 model CustomerProfile {
-  id     String @id @default(uuid()) @db.Uuid
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId String @unique @map("user_id") @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -96,7 +96,7 @@ model CustomerProfile {
 }
 
 model HostProfile {
-  id     String @id @default(uuid()) @db.Uuid
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId String @unique @map("user_id") @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -132,7 +132,7 @@ model HostProfile {
 }
 
 model AdminProfile {
-  id     String @id @default(uuid()) @db.Uuid
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId String @unique @map("user_id") @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -164,7 +164,7 @@ model AdminProfile {
 }
 
 model SuperAdminProfile {
-  id             String       @id @default(uuid()) @db.Uuid
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId         String       @unique @map("user_id") @db.Uuid
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   adminProfileId String       @unique @map("admin_profile_id") @db.Uuid

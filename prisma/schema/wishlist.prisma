@@ -1,5 +1,5 @@
 model Wishlist {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId      String   @map("user_id") @db.Uuid
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String   @db.VarChar(100)
@@ -14,7 +14,7 @@ model Wishlist {
 }
 
 model WishlistItem {
-  id         String   @id @default(uuid()) @db.Uuid
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   wishlistId String   @map("wishlist_id") @db.Uuid
   wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
   listingId  String   @map("listing_id") @db.Uuid

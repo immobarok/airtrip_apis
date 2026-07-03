@@ -47,14 +47,30 @@ export class AuthService {
         firstName: dto.firstName || '',
         lastName: dto.lastName || '',
         isCustomer: true,
-        isVerified: true,
+        isVerified: false,
+        isEmailVerified: false,
         customerProfile: {
           create: {},
         },
       },
     });
 
-    return { message: 'User registered successfully.' };
+    const otp = this.generateOtp();
+    await this.redis.set(
+      `verify_email:${dto.email}`,
+      otp,
+      Number(process.env.OTP_EXPIRY_SECONDS) || 300,
+    );
+
+    // Fire-and-forget email sending
+    this.mail.sendVerificationOtp(dto.email, otp).catch((err) => {
+      this.logger.error(
+        `Failed to send verification email to ${dto.email}`,
+        err.stack,
+      );
+    });
+
+    return { message: 'User registered successfully. Please check your email for the verification OTP.' };
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
@@ -107,7 +123,10 @@ export class AuthService {
 
     await this.prisma.user.update({
       where: { email: dto.email },
-      data: { isVerified: true },
+      data: { 
+        isVerified: true,
+        isEmailVerified: true 
+      },
     });
 
     await this.redis.del(`verify_email:${dto.email}`);

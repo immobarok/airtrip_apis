@@ -1,5 +1,5 @@
 model Listing {
-  id     String @id @default(uuid()) @db.Uuid
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   hostId String @map("host_id") @db.Uuid
   host   User   @relation("HostListings", fields: [hostId], references: [id], onDelete: Cascade)
 
@@ -71,7 +71,7 @@ model Listing {
 }
 
 model ListingPhoto {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   listingId    String   @map("listing_id") @db.Uuid
   listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
   photoUrl     String   @map("photo_url") @db.VarChar(500)
@@ -86,7 +86,7 @@ model ListingPhoto {
 }
 
 model ListingAvailability {
-  id            String   @id @default(uuid()) @db.Uuid
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   listingId     String   @map("listing_id") @db.Uuid
   listing       Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
   date          DateTime @db.Date
