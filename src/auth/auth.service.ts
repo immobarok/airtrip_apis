@@ -27,7 +27,7 @@ export class AuthService {
     private jwtService: JwtService,
     private redis: RedisService,
     private mail: MailService,
-  ) {}
+  ) { }
 
   async register(dto: RegisterDto) {
     const exists = await this.prisma.user.findUnique({
@@ -123,9 +123,9 @@ export class AuthService {
 
     await this.prisma.user.update({
       where: { email: dto.email },
-      data: { 
+      data: {
         isVerified: true,
-        isEmailVerified: true 
+        isEmailVerified: true
       },
     });
 
@@ -217,7 +217,7 @@ export class AuthService {
       }
     });
 
-    return { 
+    return {
       message: 'Congratulations! You are now a host. Please login again to refresh your permissions.',
       requiresReLogin: true
     };
