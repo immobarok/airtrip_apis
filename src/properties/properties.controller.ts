@@ -1,34 +1,25 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Query } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
-import { UpdatePropertyDto } from './dto/update-property.dto';
+import { GetPropertiesDto } from './dto/get-properties.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('properties')
 export class PropertiesController {
-  constructor(private readonly propertiesService: PropertiesService) {}
+  constructor(private readonly propertiesService: PropertiesService) { }
 
   @Post()
-  create(@Body() createPropertyDto: CreatePropertyDto) {
-    return this.propertiesService.create(createPropertyDto);
+  @UseGuards(JwtAuthGuard)
+  create(
+    @Body() createPropertyDto: CreatePropertyDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.propertiesService.create(createPropertyDto, userId);
   }
 
   @Get()
-  findAll() {
-    return this.propertiesService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.propertiesService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePropertyDto: UpdatePropertyDto) {
-    return this.propertiesService.update(+id, updatePropertyDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.propertiesService.remove(+id);
+  findAll(@Query() query: GetPropertiesDto) {
+    return this.propertiesService.getAllProperties(query);
   }
 }

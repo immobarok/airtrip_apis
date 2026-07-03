@@ -3,6 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { Public } from '../common/decorators/public.decorator';
 import { LocalAuthGuard } from './guards/local-auth.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RegisterDto, LoginDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto } from './dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -73,10 +74,15 @@ export class AuthController {
     // initiates the Facebook OAuth flow
   }
 
-  @Public()
   @UseGuards(AuthGuard('facebook'))
   @Get('facebook/callback')
   async facebookAuthRedirect(@Req() req) {
     return this.authService.login(req.user);
+  }
+
+  @Post('become-host')
+  @UseGuards(JwtAuthGuard)
+  async becomeHost(@CurrentUser('id') userId: string) {
+    return this.authService.becomeHost(userId);
   }
 }

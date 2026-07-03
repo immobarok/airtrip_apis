@@ -191,6 +191,38 @@ export class AuthService {
     }
   }
 
+  async becomeHost(userId: string) {
+    // Check if user is already a host
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { hostProfile: true }
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.isHost) {
+      return { message: 'You are already a host!' };
+    }
+
+    // Update user to be a host and create HostProfile
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        isHost: true,
+        hostProfile: {
+          create: {}
+        }
+      }
+    });
+
+    return { 
+      message: 'Congratulations! You are now a host. Please login again to refresh your permissions.',
+      requiresReLogin: true
+    };
+  }
+
   private generateOtp(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
