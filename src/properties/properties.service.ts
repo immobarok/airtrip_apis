@@ -1,11 +1,16 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { GetPropertiesDto } from './dto/get-properties.dto';
+import { UpdatePropertyDto } from './dto/update-property.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class PropertiesService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private cloudinary: CloudinaryService
+  ) { }
 
   async create(createPropertyDto: CreatePropertyDto, hostId: string) {
     try {
@@ -263,6 +268,99 @@ export class PropertiesService {
         },
       },
     });
+  }
+
+  async updateProperty(listingId: string, hostId: string, updatePropertyDto: UpdatePropertyDto) {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
+
+    if (listing.hostId !== hostId) {
+      throw new ForbiddenException('You can only update your own properties');
+    }
+
+    return await this.prisma.listing.update({
+      where: { id: listingId },
+      data: updatePropertyDto,
+    });
+  }
+
+  async deleteProperty(listingId: string, hostId: string) {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
+
+    if (listing.hostId !== hostId) {
+      throw new ForbiddenException('You can only delete your own properties');
+    }
+
+    // This performs a hard delete. In a real app, you might want to implement soft deletes
+    await this.prisma.listing.delete({
+      where: { id: listingId },
+    });
+
+    return { message: 'Property deleted successfully' };
+  }
+
+  async uploadPhotos(listingId: string, hostId: string, files: Express.Multer.File[]) {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
+
+    if (listing.hostId !== hostId) {
+      throw new ForbiddenException('You can only upload photos to your own properties');
+    }
+
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+
+    // Upload all files to Cloudinary in parallel
+    const uploadPromises = files.map(file => this.cloudinary.uploadFile(file, 'airtrip_properties'));
+    const uploadResults = await Promise.all(uploadPromises);
+
+    // Determine the next display order
+    const lastPhoto = await this.prisma.listingPhoto.findFirst({
+      where: { listingId },
+      orderBy: { displayOrder: 'desc' },
+    });
+
+    let currentDisplayOrder = (lastPhoto && lastPhoto.displayOrder !== null) ? lastPhoto.displayOrder + 1 : 0;
+    const photosToCreate = uploadResults.map(result => {
+      const order = currentDisplayOrder;
+      currentDisplayOrder++;
+      const thumbnailUrl = result.secure_url.replace(
+        '/upload/',
+        '/upload/w_600,h_400,c_fill,q_auto,f_auto/'
+      );
+
+      return {
+        listingId,
+        photoUrl: result.secure_url,
+        thumbnailUrl: thumbnailUrl,
+        isPrimary: order === 0,
+        displayOrder: order,
+      };
+    });
+    await this.prisma.listingPhoto.createMany({
+      data: photosToCreate,
+    });
+
+    return {
+      message: `${files.length} photos uploaded successfully`,
+    };
   }
 
 }

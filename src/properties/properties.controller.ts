@@ -1,12 +1,15 @@
-import { Controller, Post, Body, UseGuards, Get, Query, Param, Patch } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Query, Param, Patch, Delete, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { GetPropertiesDto } from './dto/get-properties.dto';
+import { UpdatePropertyDto } from './dto/update-property.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 
 @Controller('properties')
+@UseGuards(JwtAuthGuard)
 export class PropertiesController {
   constructor(private readonly propertiesService: PropertiesService) { }
 
@@ -41,8 +44,34 @@ export class PropertiesController {
     return this.propertiesService.getProperty(id, userId);
   }
 
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() updatePropertyDto: UpdatePropertyDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.propertiesService.updateProperty(id, userId, updatePropertyDto);
+  }
+
+  @Delete(':id')
+  remove(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.propertiesService.deleteProperty(id, userId);
+  }
+
+  @Post(':id/photos')
+  @UseInterceptors(FilesInterceptor('files', 10))
+  uploadPhotos(
+    @Param('id') id: string,
+    @UploadedFiles() files: Express.Multer.File[],
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.propertiesService.uploadPhotos(id, userId, files);
+  }
+
   @Patch(':id/publish')
-  @UseGuards(JwtAuthGuard)
   publish(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -51,7 +80,6 @@ export class PropertiesController {
   }
 
   @Patch(':id/unpublish')
-  @UseGuards(JwtAuthGuard)
   unpublish(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
