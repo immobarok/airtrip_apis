@@ -29,6 +29,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { WishlistsModule } from './wishlists/wishlists.module';
+import { MessagingModule } from './messaging/messaging.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { WishlistsModule } from './wishlists/wishlists.module';
     PaymentsModule,
     ReviewsModule,
     WishlistsModule,
+    MessagingModule,
   ],
   controllers: [AppController],
   providers: [
