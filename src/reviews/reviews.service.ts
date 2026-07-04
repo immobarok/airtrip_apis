@@ -6,7 +6,7 @@ import { GetReviewsDto } from './dto/get-reviews.dto';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async createReview(userId: string, dto: CreateReviewDto) {
     const booking = await this.prisma.booking.findUnique({
@@ -49,7 +49,7 @@ export class ReviewsService {
     });
 
     await this.updateListingRating(booking.listingId);
-    
+
     return review;
   }
 
@@ -166,7 +166,7 @@ export class ReviewsService {
           averageRating: Number((hostStats._avg.overallRating || 0).toFixed(1)),
           totalReviews: hostStats._count.id
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }
 }
