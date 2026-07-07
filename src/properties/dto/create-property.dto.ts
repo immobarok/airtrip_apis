@@ -1,10 +1,37 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, Min, Max, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, Min, IsBoolean } from 'class-validator';
 
 export class CreatePropertyDto {
+  // Basic Info
   @IsString()
   @IsNotEmpty()
   title: string;
 
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  // Location
+  @IsString()
+  @IsNotEmpty()
+  address: string;
+
+  @IsString()
+  @IsNotEmpty()
+  city: string;
+
+  @IsString()
+  @IsNotEmpty()
+  state: string;
+
+  @IsString()
+  @IsNotEmpty()
+  postal: string;
+
+  @IsString()
+  @IsNotEmpty()
+  country: string;
+
+  // Property Details
   @IsString()
   @IsNotEmpty()
   propertyType: string;
@@ -13,42 +40,10 @@ export class CreatePropertyDto {
   @IsNotEmpty()
   roomType: string;
 
-  @IsString()
-  @IsNotEmpty()
-  city: string;
-
-  @IsString()
-  @IsNotEmpty()
-  country: string;
-
-  @IsNumber()
-  @Min(0)
-  basePricePerNight: number;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @IsString()
-  @IsOptional()
-  addressLine1?: string;
-
-  @IsString()
-  @IsOptional()
-  addressLine2?: string;
-
-  @IsString()
-  @IsOptional()
-  stateProvince?: string;
-
-  @IsString()
-  @IsOptional()
-  postalCode?: string;
-
   @IsNumber()
   @IsOptional()
   @Min(1)
-  maxGuests?: number;
+  guests?: number;
 
   @IsNumber()
   @IsOptional()
@@ -65,6 +60,32 @@ export class CreatePropertyDto {
   @Min(0)
   bathrooms?: number;
 
+  // Pricing
+  @IsNumber()
+  @Min(0)
+  price: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  cleaningFee?: number;
+
+  // Photos
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  photos?: string[];
+
+  // Status
+  @IsString()
+  @IsOptional()
+  status?: string;
+
+  // Extra fields that were in the original DTO (optional)
+  @IsBoolean()
+  @IsOptional()
+  instantBook?: boolean;
+
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
@@ -72,16 +93,8 @@ export class CreatePropertyDto {
 
   @IsNumber()
   @IsOptional()
-  @Min(0)
-  cleaningFee?: number;
-
-  @IsBoolean()
-  @IsOptional()
-  instantBook?: boolean;
-
-  @IsNumber()
-  @IsOptional()
   latitude?: number;
+
   @IsNumber()
   @IsOptional()
   longitude?: number;

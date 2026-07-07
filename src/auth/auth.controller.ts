@@ -49,8 +49,10 @@ export class AuthController {
   }
 
   @Get('me')
-  getProfile(@CurrentUser() user) {
-    return user;
+  @UseGuards(JwtAuthGuard)
+  async getProfile(@CurrentUser() user: any) {
+    const userId = user?.sub || user?.id;
+    return this.authService.getMe(userId);
   }
 
   @Public()
@@ -84,5 +86,11 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async becomeHost(@CurrentUser('id') userId: string) {
     return this.authService.becomeHost(userId);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  async logout() {
+    return this.authService.logout();
   }
 }

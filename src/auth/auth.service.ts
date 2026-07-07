@@ -223,7 +223,31 @@ export class AuthService {
     };
   }
 
+  async getMe(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        hostProfile: true,
+        customerProfile: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...safeUser } = user;
+    return safeUser;
+  }
+
   private generateOtp(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  async logout() {
+    // With stateless JWTs, logout is largely client-side token deletion.
+    // Here we can return a success message.
+    return { message: 'Logged out successfully' };
   }
 }

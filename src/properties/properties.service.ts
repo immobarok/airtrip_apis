@@ -14,30 +14,47 @@ export class PropertiesService {
 
   async create(createPropertyDto: CreatePropertyDto, hostId: string) {
     try {
+      const status = createPropertyDto.status?.toLowerCase() === 'published' ? 'published' : 'draft';
+
       const listing = await this.prisma.listing.create({
         data: {
           hostId,
           title: createPropertyDto.title,
+          description: createPropertyDto.description,
           propertyType: createPropertyDto.propertyType,
           roomType: createPropertyDto.roomType,
+          
+          addressLine1: createPropertyDto.address,
           city: createPropertyDto.city,
+          stateProvince: createPropertyDto.state,
+          postalCode: createPropertyDto.postal,
           country: createPropertyDto.country,
-          basePricePerNight: createPropertyDto.basePricePerNight,
-          description: createPropertyDto.description,
-          addressLine1: createPropertyDto.addressLine1,
-          addressLine2: createPropertyDto.addressLine2,
-          stateProvince: createPropertyDto.stateProvince,
-          postalCode: createPropertyDto.postalCode,
-          maxGuests: createPropertyDto.maxGuests ?? 1,
+          
+          maxGuests: createPropertyDto.guests ?? 1,
           bedrooms: createPropertyDto.bedrooms ?? 0,
           beds: createPropertyDto.beds ?? 1,
           bathrooms: createPropertyDto.bathrooms ?? 1,
-          amenities: createPropertyDto.amenities ?? [],
+          
+          basePricePerNight: createPropertyDto.price,
           cleaningFee: createPropertyDto.cleaningFee ?? 0,
+          
+          amenities: createPropertyDto.amenities ?? [],
           instantBook: createPropertyDto.instantBook ?? false,
           latitude: createPropertyDto.latitude,
           longitude: createPropertyDto.longitude,
-          status: 'draft', // Default status for new properties
+          
+          status,
+          publishedAt: status === 'published' ? new Date() : null,
+
+          ...(createPropertyDto.photos && createPropertyDto.photos.length > 0 && {
+            photos: {
+              create: createPropertyDto.photos.map((url, index) => ({
+                photoUrl: url,
+                isPrimary: index === 0,
+                displayOrder: index,
+              })),
+            },
+          }),
         },
       });
 
@@ -46,6 +63,7 @@ export class PropertiesService {
         propertyId: listing.id,
       };
     } catch (error) {
+      console.error(error);
       throw new BadRequestException('Failed to create property. Please verify your data.');
     }
   }
@@ -285,9 +303,59 @@ export class PropertiesService {
       throw new ForbiddenException('You can only update your own properties');
     }
 
+    const data: any = {};
+    if (updatePropertyDto.title !== undefined) data.title = updatePropertyDto.title;
+    if (updatePropertyDto.description !== undefined) data.description = updatePropertyDto.description;
+    if (updatePropertyDto.propertyType !== undefined) data.propertyType = updatePropertyDto.propertyType;
+    if (updatePropertyDto.roomType !== undefined) data.roomType = updatePropertyDto.roomType;
+    
+    if (updatePropertyDto.address !== undefined) data.addressLine1 = updatePropertyDto.address;
+    if (updatePropertyDto.city !== undefined) data.city = updatePropertyDto.city;
+    if (updatePropertyDto.state !== undefined) data.stateProvince = updatePropertyDto.state;
+    if (updatePropertyDto.postal !== undefined) data.postalCode = updatePropertyDto.postal;
+    if (updatePropertyDto.country !== undefined) data.country = updatePropertyDto.country;
+    
+    if (updatePropertyDto.guests !== undefined) data.maxGuests = updatePropertyDto.guests;
+    if (updatePropertyDto.bedrooms !== undefined) data.bedrooms = updatePropertyDto.bedrooms;
+    if (updatePropertyDto.beds !== undefined) data.beds = updatePropertyDto.beds;
+    if (updatePropertyDto.bathrooms !== undefined) data.bathrooms = updatePropertyDto.bathrooms;
+    
+    if (updatePropertyDto.price !== undefined) data.basePricePerNight = updatePropertyDto.price;
+    if (updatePropertyDto.cleaningFee !== undefined) data.cleaningFee = updatePropertyDto.cleaningFee;
+    
+    if (updatePropertyDto.amenities !== undefined) data.amenities = updatePropertyDto.amenities;
+    if (updatePropertyDto.instantBook !== undefined) data.instantBook = updatePropertyDto.instantBook;
+    if (updatePropertyDto.latitude !== undefined) data.latitude = updatePropertyDto.latitude;
+    if (updatePropertyDto.longitude !== undefined) data.longitude = updatePropertyDto.longitude;
+
+    if (updatePropertyDto.status !== undefined) {
+      const status = updatePropertyDto.status.toLowerCase() === 'published' ? 'published' : 'draft';
+      data.status = status;
+      if (status === 'published') {
+         data.publishedAt = new Date();
+      } else {
+         data.publishedAt = null;
+      }
+    }
+
+    if (updatePropertyDto.photos !== undefined) {
+      if (updatePropertyDto.photos.length > 0) {
+        data.photos = {
+          deleteMany: {},
+          create: updatePropertyDto.photos.map((url, index) => ({
+            photoUrl: url,
+            isPrimary: index === 0,
+            displayOrder: index,
+          })),
+        };
+      } else {
+        data.photos = { deleteMany: {} };
+      }
+    }
+
     return await this.prisma.listing.update({
       where: { id: listingId },
-      data: updatePropertyDto,
+      data,
     });
   }
 

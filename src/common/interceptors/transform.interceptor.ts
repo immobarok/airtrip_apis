@@ -80,12 +80,25 @@ export class TransformInterceptor<T> implements NestInterceptor<
 
     return next.handle().pipe(
       map((data) => {
+        let message = this.getStatusMessage(response.statusCode);
+        let finalData = data;
+
+        // Elevate custom message from the returned payload
+        if (data && typeof data === 'object' && !Array.isArray(data) && 'message' in data) {
+          message = data.message;
+          const { message: _msg, ...rest } = data;
+          finalData = Object.keys(rest).length > 0 ? rest : undefined;
+        }
+
         const result: any = {
           success: true,
           statusCode: response.statusCode,
-          message: this.getStatusMessage(response.statusCode),
-          data,
+          message,
         };
+
+        if (finalData !== undefined) {
+          result.data = finalData;
+        }
 
         if (!isProduction) {
           result.path = request.originalUrl;
