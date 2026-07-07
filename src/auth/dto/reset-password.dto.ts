@@ -3,7 +3,6 @@ import {
   IsNotEmpty,
   IsString,
   Length,
-  MinLength,
   IsStrongPassword,
 } from 'class-validator';
 

@@ -19,12 +19,10 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const configService = app.get(ConfigService);
 
-  // ── Global Prefix ──────────────────────────────────────────
   app.setGlobalPrefix('api', {
     exclude: ['/', 'health'],
   });
 
-  // ── API Versioning ─────────────────────────────────────────
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
@@ -46,7 +44,6 @@ async function bootstrap() {
     maxAge: 3600,
   });
 
-  // ── Global Pipes ───────────────────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

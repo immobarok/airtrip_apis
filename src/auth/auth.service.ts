@@ -143,7 +143,7 @@ export class AuthService {
     await this.redis.set(
       `reset_password:${dto.email}`,
       otp,
-      Number(process.env.OTP_EXPIRY_SECONDS),
+      Number(process.env.OTP_EXPIRY_SECONDS) || 300,
     );
 
     // Fire-and-forget: don't block the response waiting for SMTP
