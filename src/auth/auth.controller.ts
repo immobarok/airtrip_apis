@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { Public } from '../common/decorators/public.decorator';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto } from './dto';
+import { RegisterDto, VerifyEmailDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto, HostOnboardDto } from './dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('auth')
@@ -86,6 +86,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async becomeHost(@CurrentUser('id') userId: string) {
     return this.authService.becomeHost(userId);
+  }
+
+  @Public()
+  @Post('host-onboard')
+  async onboardHost(@Body() dto: HostOnboardDto) {
+    return this.authService.onboardHost(dto);
   }
 
   @Post('logout')

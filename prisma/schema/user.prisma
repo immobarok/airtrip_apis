@@ -5,6 +5,7 @@ model User {
   phone        String? @db.VarChar(20)
   firstName    String  @map("first_name") @db.VarChar(100)
   lastName     String  @map("last_name") @db.VarChar(100)
+  dateOfBirth  DateTime? @map("date_of_birth") @db.Date
   avatarUrl    String? @map("avatar_url") @db.VarChar(500)
 
   // Role flags

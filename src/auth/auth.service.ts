@@ -15,6 +15,7 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
   RefreshTokenDto,
+  HostOnboardDto,
 } from './dto';
 import { Role } from '../common/decorators/roles.decorator';
 
@@ -239,6 +240,121 @@ export class AuthService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...safeUser } = user;
     return safeUser;
+  }
+
+  async onboardHost(dto: HostOnboardDto) {
+    let user: any = null;
+    
+    // If email is provided, try to find and authenticate the user
+    if (dto.email && dto.password) {
+      user = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+        include: { hostProfile: true }
+      });
+      
+      if (user) {
+        // Authenticate
+        const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+        if (!isPasswordValid) {
+          throw new UnauthorizedException('Invalid credentials');
+        }
+        
+        // Upgrade to host if not already
+        if (!user.isHost) {
+          user = await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+              isHost: true,
+              dateOfBirth: dto.dob ? new Date(dto.dob) : user.dateOfBirth,
+              hostProfile: {
+                create: {}
+              }
+            },
+            include: { hostProfile: true }
+          });
+        }
+      } else {
+        // Create new user
+        const salt = await bcrypt.genSalt();
+        const hash = await bcrypt.hash(dto.password, salt);
+        
+        user = await this.prisma.user.create({
+          data: {
+            email: dto.email,
+            passwordHash: hash,
+            firstName: dto.firstName || '',
+            lastName: dto.lastName || '',
+            dateOfBirth: dto.dob ? new Date(dto.dob) : null,
+            isCustomer: true,
+            isHost: true,
+            isVerified: true,
+            isEmailVerified: false,
+            customerProfile: { create: {} },
+            hostProfile: { create: {} }
+          },
+          include: { hostProfile: true }
+        });
+      }
+    } else {
+      throw new BadRequestException('Email and password are required for onboarding');
+    }
+    const checkInDate = dto.checkInTime ? new Date(`1970-01-01T${dto.checkInTime}:00Z`) : null;
+    const checkOutDate = dto.checkOutTime ? new Date(`1970-01-01T${dto.checkOutTime}:00Z`) : null;
+
+    const listing = await this.prisma.listing.create({
+      data: {
+        hostId: user.id,
+        title: dto.title,
+        description: dto.description,
+        propertyType: dto.propertyType,
+        roomType: dto.roomType,
+        
+        addressLine1: dto.addressLine1,
+        addressLine2: dto.addressLine2,
+        city: dto.city,
+        stateProvince: dto.stateProvince,
+        postalCode: dto.postalCode,
+        country: dto.country,
+        latitude: dto.latitude ? parseFloat(dto.latitude) : null,
+        longitude: dto.longitude ? parseFloat(dto.longitude) : null,
+        
+        maxGuests: dto.maxGuests,
+        bedrooms: dto.bedrooms,
+        beds: dto.beds,
+        bathrooms: dto.bathrooms,
+        
+        amenities: dto.amenities || [],
+        
+        basePricePerNight: dto.basePricePerNight,
+        cleaningFee: dto.cleaningFee,
+        serviceFeePercent: dto.serviceFeePercent,
+        
+        minNights: dto.minNights,
+        maxNights: dto.maxNights,
+        checkInTime: checkInDate,
+        checkOutTime: checkOutDate,
+        instantBook: dto.instantBook || false,
+        
+        status: 'published', // Publish immediately for MVP
+        
+        photos: {
+          create: dto.photos?.map((url, index) => ({
+            photoUrl: url,
+            displayOrder: index,
+            isPrimary: index === 0
+          })) || []
+        }
+      }
+    });
+
+    // Auto-login the user
+    const loginResult = await this.login(user);
+    
+    return {
+      message: 'Host onboarding completed successfully! Your property is now listed.',
+      ...loginResult,
+      listingId: listing.id
+    };
   }
 
   private generateOtp(): string {
