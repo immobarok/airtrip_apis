@@ -41,4 +41,8 @@ export class GetPropertiesDto {
   @IsNumber()
   @Min(0)
   maxPrice?: number;
+
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
 }

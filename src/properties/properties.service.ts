@@ -92,7 +92,7 @@ export class PropertiesService {
   async getAllProperties(query: GetPropertiesDto) {
     const {
       page = 1, limit = 10, city, country,
-      propertyType, roomType, minPrice, maxPrice
+      propertyType, roomType, minPrice, maxPrice, sortBy
     } = query;
 
     const skip = (page - 1) * limit;
@@ -100,7 +100,13 @@ export class PropertiesService {
     const where: any = {};
     if (city) where.city = { contains: city, mode: 'insensitive' };
     if (country) where.country = country;
-    if (propertyType) where.propertyType = propertyType;
+    if (propertyType) {
+      if (propertyType.includes(',')) {
+        where.propertyType = { in: propertyType.split(',').map(s => s.trim()) };
+      } else {
+        where.propertyType = propertyType;
+      }
+    }
     if (roomType) where.roomType = roomType;
 
     if (minPrice || maxPrice) {
@@ -111,6 +117,18 @@ export class PropertiesService {
 
     // Usually we only show active/published properties to public
     where.status = 'published';
+
+    let orderBy: any = { createdAt: 'desc' };
+    if (sortBy === 'price_asc') {
+      orderBy = { basePricePerNight: 'asc' };
+    } else if (sortBy === 'price_desc') {
+      orderBy = { basePricePerNight: 'desc' };
+    } else if (sortBy === 'rating_desc') {
+      orderBy = [
+        { averageRating: 'desc' },
+        { totalReviews: 'desc' }
+      ];
+    }
 
     const [total, properties] = await Promise.all([
       this.prisma.listing.count({ where }),
@@ -127,7 +145,7 @@ export class PropertiesService {
             orderBy: { displayOrder: 'asc' }
           }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy
       })
     ]);
 
