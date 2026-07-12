@@ -340,8 +340,33 @@ export class PropertiesService {
     });
   }
 
+  private getIconForAmenity(amenity: string): string {
+    const lowercase = amenity.toLowerCase();
+    if (lowercase.includes('wifi')) return 'Wifi01Icon';
+    if (lowercase.includes('tv')) return 'Tv01Icon';
+    if (lowercase.includes('kitchen') || lowercase.includes('cook') || lowercase.includes('oven')) return 'Restaurant01Icon';
+    if (lowercase.includes('washer') || lowercase.includes('dryer')) return 'WashingMachineIcon';
+    if (lowercase.includes('parking')) return 'Car01Icon';
+    if (lowercase.includes('pool')) return 'SwimmingIcon';
+    if (lowercase.includes('hot tub')) return 'Bathtub01Icon';
+    if (lowercase.includes('air conditioning')) return 'WindIcon';
+    if (lowercase.includes('heating')) return 'FireIcon';
+    if (lowercase.includes('workspace')) return 'Laptop01Icon';
+    if (lowercase.includes('breakfast') || lowercase.includes('coffee')) return 'Coffee01Icon';
+    if (lowercase.includes('gym') || lowercase.includes('fitness')) return 'Dumbbell01Icon';
+    if (lowercase.includes('pet')) return 'DogIcon';
+    if (lowercase.includes('smoke alarm') || lowercase.includes('carbon monoxide')) return 'Alert01Icon';
+    if (lowercase.includes('first aid')) return 'FirstAidKitIcon';
+    if (lowercase.includes('self check-in') || lowercase.includes('lockbox')) return 'Door01Icon';
+    if (lowercase.includes('hair dryer') || lowercase.includes('shampoo') || lowercase.includes('bidet') || lowercase.includes('shower')) return 'ShowerIcon';
+    if (lowercase.includes('iron')) return 'IronIcon';
+    if (lowercase.includes('elevator')) return 'ElevatorIcon';
+    if (lowercase.includes('bed') || lowercase.includes('pillow') || lowercase.includes('blanket')) return 'BedSingle01Icon';
+    return 'CheckmarkBadge01Icon'; // default icon
+  }
+
   async getProperty(listingId: string, userId?: string) {
-    return await this.prisma.listing.findUnique({
+    const property = await this.prisma.listing.findUnique({
       where: { id: listingId },
       include: {
         host: {
@@ -377,6 +402,20 @@ export class PropertiesService {
         },
       },
     });
+
+    if (!property) return null;
+
+    // Transform amenities to include icons
+    const formattedAmenities = property.amenities.map(amenity => ({
+      name: amenity,
+      icon: this.getIconForAmenity(amenity)
+    }));
+
+    return {
+      ...property,
+      amenities: formattedAmenities,
+      rawAmenities: property.amenities // Keep original strings for forms
+    };
   }
 
   async updateProperty(listingId: string, hostId: string, updatePropertyDto: UpdatePropertyDto) {
