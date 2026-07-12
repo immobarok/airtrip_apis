@@ -17,6 +17,24 @@ export class PropertiesService {
     try {
       const status = createPropertyDto.status?.toLowerCase() === 'published' ? 'published' : 'draft';
 
+      let processedPhotos: string[] = [];
+      if (createPropertyDto.photos && createPropertyDto.photos.length > 0) {
+        const validPhotos = createPropertyDto.photos.filter(url => url && url.trim() !== '');
+        for (const url of validPhotos) {
+          if (url.startsWith('data:image')) {
+            try {
+              const result = await cloudinary.uploader.upload(url, { folder: 'listings' });
+              processedPhotos.push(result.secure_url);
+            } catch (e) {
+              const logger = new Logger('PropertiesService');
+              logger.error('Failed to upload base64 image to Cloudinary in createProperty', e);
+            }
+          } else {
+            processedPhotos.push(url);
+          }
+        }
+      }
+
       const listing = await this.prisma.listing.create({
         data: {
           hostId,
@@ -47,9 +65,9 @@ export class PropertiesService {
           status,
           publishedAt: status === 'published' ? new Date() : null,
 
-          ...(createPropertyDto.photos && createPropertyDto.photos.length > 0 && {
+          ...(processedPhotos.length > 0 && {
             photos: {
-              create: createPropertyDto.photos.map((url, index) => ({
+              create: processedPhotos.map((url, index) => ({
                 photoUrl: url,
                 isPrimary: index === 0,
                 displayOrder: index,
