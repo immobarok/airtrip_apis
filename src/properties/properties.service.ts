@@ -469,4 +469,128 @@ export class PropertiesService {
     };
   }
 
+  async getPropertyAvailability(listingId: string) {
+    // Get all dates blocked by the host
+    const blockedDates = await this.prisma.listingAvailability.findMany({
+      where: {
+        listingId,
+        isAvailable: false,
+      },
+      select: {
+        date: true,
+      }
+    });
+
+    // Get all dates from active bookings (CONFIRMED or PENDING)
+    // We only need bookings in the future or currently ongoing
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const activeBookings = await this.prisma.booking.findMany({
+      where: {
+        listingId,
+        status: {
+          in: ['CONFIRMED', 'PENDING']
+        },
+        checkOutDate: {
+          gte: today
+        }
+      },
+      select: {
+        checkInDate: true,
+        checkOutDate: true,
+      }
+    });
+
+    // Convert bookings to an array of dates
+    const bookedDatesArr: Date[] = [];
+    for (const booking of activeBookings) {
+      const currentDate = new Date(booking.checkInDate);
+      const endDate = new Date(booking.checkOutDate);
+      
+      while (currentDate < endDate) {
+        bookedDatesArr.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
+
+    return {
+      blockedDates: blockedDates.map(b => b.date),
+      bookedDates: bookedDatesArr,
+    };
+  }
+
+  async blockDates(listingId: string, hostId: string, dateStrings: string[]) {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
+
+    if (listing.hostId !== hostId) {
+      throw new ForbiddenException('You can only manage your own properties');
+    }
+
+    const operations = dateStrings.map(dateStr => {
+      const date = new Date(dateStr);
+      // Strip time part
+      date.setUTCHours(0,0,0,0);
+      
+      return this.prisma.listingAvailability.upsert({
+        where: {
+          listingId_date: {
+            listingId,
+            date,
+          }
+        },
+        update: {
+          isAvailable: false,
+        },
+        create: {
+          listingId,
+          date,
+          isAvailable: false,
+        }
+      });
+    });
+
+    await this.prisma.$transaction(operations);
+
+    return { message: 'Dates blocked successfully' };
+  }
+
+  async unblockDates(listingId: string, hostId: string, dateStrings: string[]) {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
+
+    if (listing.hostId !== hostId) {
+      throw new ForbiddenException('You can only manage your own properties');
+    }
+
+    const dates = dateStrings.map(d => {
+      const date = new Date(d);
+      date.setUTCHours(0,0,0,0);
+      return date;
+    });
+
+    // We can just delete the rows or set them to true. Deleting is cleaner if there's no price override.
+    await this.prisma.listingAvailability.deleteMany({
+      where: {
+        listingId,
+        date: {
+          in: dates,
+        }
+      }
+    });
+
+    return { message: 'Dates unblocked successfully' };
+  }
+
 }

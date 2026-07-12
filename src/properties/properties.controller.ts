@@ -4,6 +4,7 @@ import { PropertiesService } from './properties.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { GetPropertiesDto } from './dto/get-properties.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
+import { ManageAvailabilityDto } from './dto/manage-availability.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
@@ -85,5 +86,29 @@ export class PropertiesController {
     @CurrentUser('id') userId: string,
   ) {
     return this.propertiesService.unpublishProperty(id, userId);
+  }
+
+  @Public()
+  @Get(':id/availability')
+  getAvailability(@Param('id') id: string) {
+    return this.propertiesService.getPropertyAvailability(id);
+  }
+
+  @Post(':id/availability/block')
+  blockDates(
+    @Param('id') id: string,
+    @Body() dto: ManageAvailabilityDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.propertiesService.blockDates(id, userId, dto.dates);
+  }
+
+  @Post(':id/availability/unblock')
+  unblockDates(
+    @Param('id') id: string,
+    @Body() dto: ManageAvailabilityDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.propertiesService.unblockDates(id, userId, dto.dates);
   }
 }
