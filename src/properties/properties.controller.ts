@@ -28,6 +28,12 @@ export class PropertiesController {
     return this.propertiesService.getAllProperties(query);
   }
 
+  @Public()
+  @Get('destinations/top')
+  getTopDestinations() {
+    return this.propertiesService.getTopDestinations();
+  }
+
   @Get('my-properties')
   getMyProperties(
     @CurrentUser('id') userId: string,

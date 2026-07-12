@@ -160,6 +160,58 @@ export class PropertiesService {
     };
   }
 
+  async getTopDestinations() {
+    // Group properties by city and country
+    const grouped = await this.prisma.listing.groupBy({
+      by: ['city', 'country'],
+      where: {
+        status: 'published',
+      },
+      _count: {
+        id: true,
+      },
+      orderBy: {
+        _count: {
+          id: 'desc',
+        },
+      },
+      take: 6,
+    });
+
+    // For each top destination, fetch the cover photo of its most popular property
+    const destinations = await Promise.all(
+      grouped.map(async (group) => {
+        const topProperty = await this.prisma.listing.findFirst({
+          where: {
+            city: group.city,
+            country: group.country,
+            status: 'published',
+          },
+          orderBy: [
+            { averageRating: 'desc' },
+            { totalReviews: 'desc' },
+          ],
+          include: {
+            photos: {
+              take: 1,
+              orderBy: { displayOrder: 'asc' },
+            },
+          },
+        });
+
+        return {
+          name: `${group.city}, ${group.country}`,
+          listings: group._count.id.toString(),
+          image: topProperty?.photos?.[0]?.photoUrl || "https://images.unsplash.com/photo-1499856871958-5b9627545d1a", // fallback image
+        };
+      })
+    );
+
+    return {
+      data: destinations,
+    };
+  }
+
   async publishProperty(listingId: string, hostId: string) {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
