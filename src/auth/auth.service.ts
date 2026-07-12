@@ -4,6 +4,7 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { v2 as cloudinary } from 'cloudinary';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -242,62 +243,79 @@ export class AuthService {
     return safeUser;
   }
 
-  async onboardHost(dto: HostOnboardDto) {
+  async onboardHost(dto: HostOnboardDto, authHeader?: string) {
     let user: any = null;
-    
-    // If email is provided, try to find and authenticate the user
-    if (dto.email && dto.password) {
-      user = await this.prisma.user.findUnique({
-        where: { email: dto.email },
-        include: { hostProfile: true }
-      });
-      
-      if (user) {
-        // Authenticate
-        const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
-        if (!isPasswordValid) {
-          throw new UnauthorizedException('Invalid credentials');
-        }
-        
-        // Upgrade to host if not already
-        if (!user.isHost) {
-          user = await this.prisma.user.update({
-            where: { id: user.id },
+
+    // Check if auth header is provided (user is already logged in)
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const payload = this.jwtService.verify(token, { secret: process.env.JWT_SECRET });
+        user = await this.prisma.user.findUnique({
+          where: { id: payload.sub },
+          include: { hostProfile: true }
+        });
+      } catch (e) {
+        // Token invalid or expired, ignore and proceed with email/password if provided
+      }
+    }
+
+    if (!user) {
+      // If no valid token, email and password are required
+      if (dto.email && dto.password) {
+        user = await this.prisma.user.findUnique({
+          where: { email: dto.email },
+          include: { hostProfile: true }
+        });
+
+        if (user) {
+          // Authenticate
+          const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+          if (!isPasswordValid) {
+            throw new UnauthorizedException('Invalid credentials');
+          }
+        } else {
+          // Create new user
+          const salt = await bcrypt.genSalt();
+          const hash = await bcrypt.hash(dto.password, salt);
+
+          user = await this.prisma.user.create({
             data: {
+              email: dto.email,
+              passwordHash: hash,
+              firstName: dto.firstName || '',
+              lastName: dto.lastName || '',
+              dateOfBirth: dto.dob ? new Date(dto.dob) : null,
+              isCustomer: true,
               isHost: true,
-              dateOfBirth: dto.dob ? new Date(dto.dob) : user.dateOfBirth,
-              hostProfile: {
-                create: {}
-              }
+              isVerified: true,
+              isEmailVerified: false,
+              customerProfile: { create: {} },
+              hostProfile: { create: {} }
             },
             include: { hostProfile: true }
           });
         }
-      } else {
-        // Create new user
-        const salt = await bcrypt.genSalt();
-        const hash = await bcrypt.hash(dto.password, salt);
-        
-        user = await this.prisma.user.create({
-          data: {
-            email: dto.email,
-            passwordHash: hash,
-            firstName: dto.firstName || '',
-            lastName: dto.lastName || '',
-            dateOfBirth: dto.dob ? new Date(dto.dob) : null,
-            isCustomer: true,
-            isHost: true,
-            isVerified: true,
-            isEmailVerified: false,
-            customerProfile: { create: {} },
-            hostProfile: { create: {} }
-          },
-          include: { hostProfile: true }
-        });
       }
-    } else {
-      throw new BadRequestException('Email and password are required for onboarding');
     }
+
+    if (!user) {
+      throw new BadRequestException('Email and password are required for anonymous onboarding, or provide a valid auth token.');
+    }
+
+    // Upgrade existing user to Host if they are not already
+    if (!user.isHost) {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          isHost: true,
+          dateOfBirth: dto.dob ? new Date(dto.dob) : user.dateOfBirth,
+          hostProfile: user.hostProfile ? undefined : { create: {} }
+        },
+        include: { hostProfile: true }
+      });
+    }
+
     const checkInDate = dto.checkInTime ? new Date(`1970-01-01T${dto.checkInTime}:00Z`) : null;
     const checkOutDate = dto.checkOutTime ? new Date(`1970-01-01T${dto.checkOutTime}:00Z`) : null;
 
@@ -308,48 +326,73 @@ export class AuthService {
         description: dto.description,
         propertyType: dto.propertyType,
         roomType: dto.roomType,
-        
+
         addressLine1: dto.addressLine1,
         addressLine2: dto.addressLine2,
         city: dto.city,
         stateProvince: dto.stateProvince,
         postalCode: dto.postalCode,
-        country: dto.country,
+        country: dto.country ? dto.country.substring(0, 2).toUpperCase() : 'US',
         latitude: dto.latitude ? parseFloat(dto.latitude) : null,
         longitude: dto.longitude ? parseFloat(dto.longitude) : null,
-        
+
         maxGuests: dto.maxGuests,
         bedrooms: dto.bedrooms,
         beds: dto.beds,
         bathrooms: dto.bathrooms,
-        
+
         amenities: dto.amenities || [],
-        
+
         basePricePerNight: dto.basePricePerNight,
         cleaningFee: dto.cleaningFee,
         serviceFeePercent: dto.serviceFeePercent,
-        
+
         minNights: dto.minNights,
         maxNights: dto.maxNights,
         checkInTime: checkInDate,
         checkOutTime: checkOutDate,
         instantBook: dto.instantBook || false,
-        
+
         status: 'published', // Publish immediately for MVP
-        
-        photos: {
-          create: dto.photos?.map((url, index) => ({
-            photoUrl: url,
-            displayOrder: index,
-            isPrimary: index === 0
-          })) || []
-        }
       }
     });
 
+    // Process and upload photos
+    const validPhotos = dto.photos?.filter(url => url && url.trim() !== '') || [];
+    const photoCreates: { listingId: string; photoUrl: string; displayOrder: number; isPrimary: boolean; }[] = [];
+    
+    for (let i = 0; i < validPhotos.length; i++) {
+      let photoUrl = validPhotos[i];
+      // If base64, upload to Cloudinary
+      if (photoUrl.startsWith('data:image')) {
+        try {
+          const result = await cloudinary.uploader.upload(photoUrl, {
+            folder: 'listings'
+          });
+          photoUrl = result.secure_url;
+        } catch (e) {
+          this.logger.error('Failed to upload base64 image to Cloudinary', e);
+          continue; // Skip failed uploads
+        }
+      }
+      
+      photoCreates.push({
+        listingId: listing.id,
+        photoUrl,
+        displayOrder: i,
+        isPrimary: i === 0
+      });
+    }
+
+    if (photoCreates.length > 0) {
+      await this.prisma.listingPhoto.createMany({
+        data: photoCreates
+      });
+    }
+
     // Auto-login the user
     const loginResult = await this.login(user);
-    
+
     return {
       message: 'Host onboarding completed successfully! Your property is now listed.',
       ...loginResult,

@@ -1,4 +1,5 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { v2 as cloudinary } from 'cloudinary';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { GetPropertiesDto } from './dto/get-properties.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -340,9 +341,26 @@ export class PropertiesService {
 
     if (updatePropertyDto.photos !== undefined) {
       if (updatePropertyDto.photos.length > 0) {
+        const validPhotos = updatePropertyDto.photos.filter(url => url && url.trim() !== '');
+        const processedPhotos: string[] = [];
+
+        for (const url of validPhotos) {
+          if (url.startsWith('data:image')) {
+            try {
+              const result = await cloudinary.uploader.upload(url, { folder: 'listings' });
+              processedPhotos.push(result.secure_url);
+            } catch (e) {
+              const logger = new Logger('PropertiesService');
+              logger.error('Failed to upload base64 image to Cloudinary in updateProperty', e);
+            }
+          } else {
+            processedPhotos.push(url);
+          }
+        }
+
         data.photos = {
           deleteMany: {},
-          create: updatePropertyDto.photos.map((url, index) => ({
+          create: processedPhotos.map((url, index) => ({
             photoUrl: url,
             isPrimary: index === 0,
             displayOrder: index,

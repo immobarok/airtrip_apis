@@ -9,7 +9,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Public()
   @Post('register')
@@ -90,8 +90,9 @@ export class AuthController {
 
   @Public()
   @Post('host-onboard')
-  async onboardHost(@Body() dto: HostOnboardDto) {
-    return this.authService.onboardHost(dto);
+  async onboardHost(@Body() dto: HostOnboardDto, @Request() req: any) {
+    const authHeader = req.headers?.authorization;
+    return this.authService.onboardHost(dto, authHeader);
   }
 
   @Post('logout')
