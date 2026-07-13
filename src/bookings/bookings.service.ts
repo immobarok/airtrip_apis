@@ -120,6 +120,13 @@ export class BookingsService {
               title: true,
               city: true,
               country: true,
+              photos: {
+                select: {
+                  photoUrl: true,
+                  isPrimary: true,
+                },
+                orderBy: { displayOrder: 'asc' },
+              },
             },
           },
           host: {
@@ -164,6 +171,13 @@ export class BookingsService {
             select: {
               id: true,
               title: true,
+              photos: {
+                select: {
+                  photoUrl: true,
+                  isPrimary: true,
+                },
+                orderBy: { displayOrder: 'asc' },
+              },
             },
           },
           guest: {

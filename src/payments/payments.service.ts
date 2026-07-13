@@ -16,8 +16,8 @@ export class PaymentsService {
     this.stripe = new Stripe(
       this.configService.get<string>('STRIPE_SECRET_KEY') as string,
       {
-        apiVersion: '2026-06-24.dahlia', // Latest Stripe API version
-      },
+        apiVersion: '2024-04-10' as any, // Valid API version
+      }
     );
   }
 
