@@ -40,6 +40,7 @@
 AirTrip API is a fully-featured, production-ready backend for a short-term property rental marketplace — think Airbnb. It exposes a versioned REST API (`/api/v1/...`) alongside a real-time WebSocket gateway for live messaging and peer-to-peer audio calls.
 
 The API powers:
+
 - **Guest flows** — browse listings, check availability, book properties, pay securely, leave reviews
 - **Host flows** — onboard as a host, manage listings, track bookings and earnings, block calendar dates
 - **Real-time messaging** — 1-on-1 chat with typing indicators and WebRTC-powered audio calling
@@ -69,42 +70,43 @@ The API powers:
 
 Every request passes through a layered middleware pipeline:
 
-| Layer | Component | Purpose |
-|-------|-----------|---------|
-| Middleware | `CorrelationIdMiddleware` | Assigns a unique `X-Correlation-Id` to every request |
-| Middleware | `HelmetHeadersMiddleware` | Sets security HTTP headers |
-| Guard | `JwtAuthGuard` | Validates Bearer tokens; routes decorated with `@Public()` are exempt |
-| Guard | `RolesGuard` | RBAC enforcement via `@Roles()` decorator |
-| Interceptor | `LoggingInterceptor` | Structured request/response logging with timing |
-| Interceptor | `PerformanceInterceptor` | Tracks slow requests |
-| Interceptor | `TimeoutInterceptor` | Enforces request timeout limits |
-| Interceptor | `ErrorInterceptor` | Normalises unhandled errors |
-| Interceptor | `TransformInterceptor` | Wraps all responses in a consistent envelope |
+| Layer       | Component                 | Purpose                                                               |
+| ----------- | ------------------------- | --------------------------------------------------------------------- |
+| Middleware  | `CorrelationIdMiddleware` | Assigns a unique `X-Correlation-Id` to every request                  |
+| Middleware  | `HelmetHeadersMiddleware` | Sets security HTTP headers                                            |
+| Guard       | `JwtAuthGuard`            | Validates Bearer tokens; routes decorated with `@Public()` are exempt |
+| Guard       | `RolesGuard`              | RBAC enforcement via `@Roles()` decorator                             |
+| Interceptor | `LoggingInterceptor`      | Structured request/response logging with timing                       |
+| Interceptor | `PerformanceInterceptor`  | Tracks slow requests                                                  |
+| Interceptor | `TimeoutInterceptor`      | Enforces request timeout limits                                       |
+| Interceptor | `ErrorInterceptor`        | Normalises unhandled errors                                           |
+| Interceptor | `TransformInterceptor`    | Wraps all responses in a consistent envelope                          |
 
 ---
 
 ## 🛠 Tech Stack
 
-| Category | Technology |
-|----------|-----------|
-| Framework | [NestJS 11](https://nestjs.com) |
-| Language | TypeScript 5.9 |
-| ORM | [Prisma 7](https://www.prisma.io) with multi-file schema |
-| Database | PostgreSQL via [Neon](https://neon.tech) (serverless) |
-| Cache | [Redis](https://redis.io) via [ioredis](https://github.com/redis/ioredis) |
-| Real-time | [Socket.io 4](https://socket.io) |
-| Auth | Passport.js — JWT, Local, Google OAuth2, Facebook OAuth |
-| Payments | [Stripe](https://stripe.com) |
-| Storage | [Cloudinary](https://cloudinary.com) |
-| Email | [Nodemailer](https://nodemailer.com) |
-| Validation | `class-validator` + `class-transformer` |
-| Deployment | [Vercel](https://vercel.com) Serverless |
+| Category   | Technology                                                                |
+| ---------- | ------------------------------------------------------------------------- |
+| Framework  | [NestJS 11](https://nestjs.com)                                           |
+| Language   | TypeScript 5.9                                                            |
+| ORM        | [Prisma 7](https://www.prisma.io) with multi-file schema                  |
+| Database   | PostgreSQL via [Neon](https://neon.tech) (serverless)                     |
+| Cache      | [Redis](https://redis.io) via [ioredis](https://github.com/redis/ioredis) |
+| Real-time  | [Socket.io 4](https://socket.io)                                          |
+| Auth       | Passport.js — JWT, Local, Google OAuth2, Facebook OAuth                   |
+| Payments   | [Stripe](https://stripe.com)                                              |
+| Storage    | [Cloudinary](https://cloudinary.com)                                      |
+| Email      | [Nodemailer](https://nodemailer.com)                                      |
+| Validation | `class-validator` + `class-transformer`                                   |
+| Deployment | [Vercel](https://vercel.com) Serverless                                   |
 
 ---
 
 ## ✨ Features
 
 ### 🔐 Authentication & Identity
+
 - Email/password registration with OTP email verification
 - JWT access & refresh token rotation
 - Forgot password / reset password via email OTP
@@ -113,6 +115,7 @@ Every request passes through a layered middleware pipeline:
 - Role-based access control (`GUEST`, `HOST`, `ADMIN`)
 
 ### 🏠 Property Listings
+
 - Full CRUD for property listings (draft → published lifecycle)
 - Multi-photo upload with Cloudinary CDN integration and auto-thumbnail generation
 - Advanced filtering: city, country, property type, room type, price range, sort order
@@ -121,6 +124,7 @@ Every request passes through a layered middleware pipeline:
 - Geolocation support (latitude/longitude)
 
 ### 📅 Bookings
+
 - Conflict detection with overlapping booking prevention
 - Guest & host booking views with pagination
 - Booking status management (PENDING → CONFIRMED → COMPLETED / CANCELLED)
@@ -128,11 +132,13 @@ Every request passes through a layered middleware pipeline:
 - Recent bookings feed
 
 ### 💳 Payments
+
 - Stripe Payment Intents for secure guest payment
 - Stripe webhook handling for payment lifecycle events
 - Host payout configuration via Stripe Connect
 
 ### 💬 Real-time Messaging
+
 - 1-on-1 conversation creation and retrieval
 - Real-time message delivery via Socket.io rooms
 - Typing indicators broadcasted to the conversation partner
@@ -140,19 +146,23 @@ Every request passes through a layered middleware pipeline:
 - Automatic call log messages (duration or missed call)
 
 ### ⭐ Reviews
+
 - Guest reviews on completed bookings
 - Rating aggregation per listing (average + total count)
 
 ### ❤️ Wishlists
+
 - Add/remove listings from personalised wishlists
 - Full wishlist retrieval with listing details
 
 ### 🖼️ Media
+
 - Unified media upload service supporting multiple categories
 - Paginated media library per owner
 - Cloudinary transformation pipeline
 
 ### 🩺 System
+
 - `/health` — database connectivity check with uptime
 - Correlation ID tracing across all log entries
 
@@ -164,88 +174,88 @@ All endpoints are prefixed with `/api/v1/`.
 
 ### Auth — `/api/v1/auth`
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/register` | Public | Register a new user |
-| `POST` | `/login` | Public | Email + password login |
-| `POST` | `/verify-email` | Public | Verify email with OTP |
-| `POST` | `/forgot-password` | Public | Request password reset OTP |
-| `POST` | `/reset-password` | Public | Reset password with OTP |
-| `POST` | `/refresh` | Public | Refresh access token |
-| `GET` | `/me` | JWT | Get authenticated user profile |
-| `GET` | `/google` | Public | Initiate Google OAuth flow |
-| `GET` | `/google/callback` | Public | Google OAuth callback |
-| `GET` | `/facebook` | Public | Initiate Facebook OAuth flow |
-| `GET` | `/facebook/callback` | Public | Facebook OAuth callback |
-| `POST` | `/become-host` | JWT | Upgrade account to HOST role |
-| `POST` | `/host-onboard` | Public | Complete host Stripe onboarding |
-| `POST` | `/logout` | JWT | Logout current session |
+| Method | Endpoint             | Auth   | Description                     |
+| ------ | -------------------- | ------ | ------------------------------- |
+| `POST` | `/register`          | Public | Register a new user             |
+| `POST` | `/login`             | Public | Email + password login          |
+| `POST` | `/verify-email`      | Public | Verify email with OTP           |
+| `POST` | `/forgot-password`   | Public | Request password reset OTP      |
+| `POST` | `/reset-password`    | Public | Reset password with OTP         |
+| `POST` | `/refresh`           | Public | Refresh access token            |
+| `GET`  | `/me`                | JWT    | Get authenticated user profile  |
+| `GET`  | `/google`            | Public | Initiate Google OAuth flow      |
+| `GET`  | `/google/callback`   | Public | Google OAuth callback           |
+| `GET`  | `/facebook`          | Public | Initiate Facebook OAuth flow    |
+| `GET`  | `/facebook/callback` | Public | Facebook OAuth callback         |
+| `POST` | `/become-host`       | JWT    | Upgrade account to HOST role    |
+| `POST` | `/host-onboard`      | Public | Complete host Stripe onboarding |
+| `POST` | `/logout`            | JWT    | Logout current session          |
 
 ### Properties — `/api/v1/properties`
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/` | Public | List published properties (with filters) |
-| `POST` | `/` | HOST | Create a new listing |
-| `GET` | `/my` | HOST | Get host's own listings |
-| `GET` | `/top-destinations` | Public | Top 6 destinations by listing count |
-| `GET` | `/:id` | Public | Get single property with reviews |
-| `PATCH` | `/:id` | HOST | Update listing |
-| `DELETE` | `/:id` | HOST | Delete listing |
-| `POST` | `/:id/publish` | HOST | Publish a draft listing |
-| `POST` | `/:id/unpublish` | HOST | Unpublish a listing |
-| `POST` | `/:id/photos` | HOST | Upload photos (multipart) |
-| `GET` | `/:id/availability` | Public | Get blocked + booked dates |
-| `POST` | `/:id/block-dates` | HOST | Block calendar dates |
-| `POST` | `/:id/unblock-dates` | HOST | Unblock calendar dates |
+| Method   | Endpoint             | Auth   | Description                              |
+| -------- | -------------------- | ------ | ---------------------------------------- |
+| `GET`    | `/`                  | Public | List published properties (with filters) |
+| `POST`   | `/`                  | HOST   | Create a new listing                     |
+| `GET`    | `/my`                | HOST   | Get host's own listings                  |
+| `GET`    | `/top-destinations`  | Public | Top 6 destinations by listing count      |
+| `GET`    | `/:id`               | Public | Get single property with reviews         |
+| `PATCH`  | `/:id`               | HOST   | Update listing                           |
+| `DELETE` | `/:id`               | HOST   | Delete listing                           |
+| `POST`   | `/:id/publish`       | HOST   | Publish a draft listing                  |
+| `POST`   | `/:id/unpublish`     | HOST   | Unpublish a listing                      |
+| `POST`   | `/:id/photos`        | HOST   | Upload photos (multipart)                |
+| `GET`    | `/:id/availability`  | Public | Get blocked + booked dates               |
+| `POST`   | `/:id/block-dates`   | HOST   | Block calendar dates                     |
+| `POST`   | `/:id/unblock-dates` | HOST   | Unblock calendar dates                   |
 
 ### Bookings — `/api/v1/bookings`
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/` | JWT | Create a booking |
-| `GET` | `/guest` | JWT | Guest's booking history |
-| `GET` | `/host` | HOST | Host's incoming bookings |
-| `GET` | `/host/stats` | HOST | Host dashboard stats |
-| `GET` | `/:id` | JWT | Get booking details |
-| `PATCH` | `/:id/status` | HOST | Update booking status |
+| Method  | Endpoint      | Auth | Description              |
+| ------- | ------------- | ---- | ------------------------ |
+| `POST`  | `/`           | JWT  | Create a booking         |
+| `GET`   | `/guest`      | JWT  | Guest's booking history  |
+| `GET`   | `/host`       | HOST | Host's incoming bookings |
+| `GET`   | `/host/stats` | HOST | Host dashboard stats     |
+| `GET`   | `/:id`        | JWT  | Get booking details      |
+| `PATCH` | `/:id/status` | HOST | Update booking status    |
 
 ### Payments — `/api/v1/payments`
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/create-intent` | JWT | Create Stripe Payment Intent |
-| `POST` | `/webhook` | Public | Stripe webhook receiver |
+| Method | Endpoint         | Auth   | Description                  |
+| ------ | ---------------- | ------ | ---------------------------- |
+| `POST` | `/create-intent` | JWT    | Create Stripe Payment Intent |
+| `POST` | `/webhook`       | Public | Stripe webhook receiver      |
 
 ### Messaging — `/api/v1/messaging`
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/conversations` | JWT | Create or retrieve a conversation |
-| `GET` | `/conversations` | JWT | List user's conversations |
-| `GET` | `/conversations/:id/messages` | JWT | Get paginated messages |
+| Method | Endpoint                      | Auth | Description                       |
+| ------ | ----------------------------- | ---- | --------------------------------- |
+| `POST` | `/conversations`              | JWT  | Create or retrieve a conversation |
+| `GET`  | `/conversations`              | JWT  | List user's conversations         |
+| `GET`  | `/conversations/:id/messages` | JWT  | Get paginated messages            |
 
 ### Reviews — `/api/v1/reviews`
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/` | JWT | Submit a review |
-| `GET` | `/listing/:id` | Public | Get reviews for a listing |
+| Method | Endpoint       | Auth   | Description               |
+| ------ | -------------- | ------ | ------------------------- |
+| `POST` | `/`            | JWT    | Submit a review           |
+| `GET`  | `/listing/:id` | Public | Get reviews for a listing |
 
 ### Wishlists — `/api/v1/wishlists`
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/` | JWT | Get user's wishlist |
-| `POST` | `/toggle` | JWT | Add / remove a listing |
+| Method | Endpoint  | Auth | Description            |
+| ------ | --------- | ---- | ---------------------- |
+| `GET`  | `/`       | JWT  | Get user's wishlist    |
+| `POST` | `/toggle` | JWT  | Add / remove a listing |
 
 ### Media — `/api/v1/media`
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/upload` | JWT | Upload one or more files |
-| `GET` | `/` | JWT | Get paginated media library |
-| `DELETE` | `/:id` | JWT | Delete a media item |
+| Method   | Endpoint  | Auth | Description                 |
+| -------- | --------- | ---- | --------------------------- |
+| `POST`   | `/upload` | JWT  | Upload one or more files    |
+| `GET`    | `/`       | JWT  | Get paginated media library |
+| `DELETE` | `/:id`    | JWT  | Delete a media item         |
 
 ---
 
@@ -368,18 +378,18 @@ FACEBOOK_CALLBACK_URL=http://localhost:8000/api/v1/auth/facebook/callback
 
 The Prisma schema is split across multiple files in `prisma/schema/` for maintainability:
 
-| File | Models |
-|------|--------|
-| `base.prisma` | Generator config, datasource (PostgreSQL + PostGIS extensions) |
-| `user.prisma` | `User`, `UserRole`, host profile fields |
-| `listing.prisma` | `Listing`, `ListingPhoto`, `ListingAvailability` |
-| `booking.prisma` | `Booking`, `BookingStatus` enum |
-| `review.prisma` | `Review` |
-| `messaging.prisma` | `Conversation`, `Message` |
-| `media.prisma` | `Media`, `MediaCategory` enum |
-| `wishlist.prisma` | `Wishlist`, `WishlistItem` |
-| `system.prisma` | `SystemConfig` |
-| `enums.prisma` | Shared enums |
+| File               | Models                                                         |
+| ------------------ | -------------------------------------------------------------- |
+| `base.prisma`      | Generator config, datasource (PostgreSQL + PostGIS extensions) |
+| `user.prisma`      | `User`, `UserRole`, host profile fields                        |
+| `listing.prisma`   | `Listing`, `ListingPhoto`, `ListingAvailability`               |
+| `booking.prisma`   | `Booking`, `BookingStatus` enum                                |
+| `review.prisma`    | `Review`                                                       |
+| `messaging.prisma` | `Conversation`, `Message`                                      |
+| `media.prisma`     | `Media`, `MediaCategory` enum                                  |
+| `wishlist.prisma`  | `Wishlist`, `WishlistItem`                                     |
+| `system.prisma`    | `SystemConfig`                                                 |
+| `enums.prisma`     | Shared enums                                                   |
 
 ### Common Commands
 
@@ -409,32 +419,32 @@ Connect to the WebSocket gateway at the same base URL. A valid JWT is required.
 import { io } from 'socket.io-client';
 
 const socket = io('https://airtripapi.vercel.app', {
-  auth: { token: 'your-jwt-access-token' }
+  auth: { token: 'your-jwt-access-token' },
 });
 ```
 
 ### Client → Server (emit)
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `joinConversation` | `{ conversationId: string }` | Join a conversation room |
-| `sendMessage` | `{ conversationId: string, content: string }` | Send a chat message |
-| `typing` | `{ conversationId: string, isTyping: boolean }` | Broadcast typing state |
-| `callUser` | `{ userToCall, signalData, from, conversationId }` | Initiate a WebRTC call offer |
-| `answerCall` | `{ to: string, signal: RTCSessionDescription }` | Accept an incoming call |
-| `iceCandidate` | `{ to: string, candidate: RTCIceCandidate }` | Relay an ICE candidate |
-| `endCall` | `{ to, conversationId?, durationSeconds?, isMissed? }` | Terminate a call |
+| Event              | Payload                                                | Description                  |
+| ------------------ | ------------------------------------------------------ | ---------------------------- |
+| `joinConversation` | `{ conversationId: string }`                           | Join a conversation room     |
+| `sendMessage`      | `{ conversationId: string, content: string }`          | Send a chat message          |
+| `typing`           | `{ conversationId: string, isTyping: boolean }`        | Broadcast typing state       |
+| `callUser`         | `{ userToCall, signalData, from, conversationId }`     | Initiate a WebRTC call offer |
+| `answerCall`       | `{ to: string, signal: RTCSessionDescription }`        | Accept an incoming call      |
+| `iceCandidate`     | `{ to: string, candidate: RTCIceCandidate }`           | Relay an ICE candidate       |
+| `endCall`          | `{ to, conversationId?, durationSeconds?, isMissed? }` | Terminate a call             |
 
 ### Server → Client (on)
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `newMessage` | `Message` | A message was sent in a conversation |
-| `typing` | `{ conversationId, userId, isTyping }` | Partner's typing state changed |
-| `incomingCall` | `{ signal, from, conversationId }` | Incoming WebRTC call offer |
-| `callAccepted` | `RTCSessionDescription` | Remote peer accepted your call |
-| `iceCandidate` | `RTCIceCandidate` | ICE candidate from remote peer |
-| `callEnded` | — | Remote peer ended the call |
+| Event          | Payload                                | Description                          |
+| -------------- | -------------------------------------- | ------------------------------------ |
+| `newMessage`   | `Message`                              | A message was sent in a conversation |
+| `typing`       | `{ conversationId, userId, isTyping }` | Partner's typing state changed       |
+| `incomingCall` | `{ signal, from, conversationId }`     | Incoming WebRTC call offer           |
+| `callAccepted` | `RTCSessionDescription`                | Remote peer accepted your call       |
+| `iceCandidate` | `RTCIceCandidate`                      | ICE candidate from remote peer       |
+| `callEnded`    | —                                      | Remote peer ended the call           |
 
 ---
 
@@ -476,11 +486,11 @@ Error responses:
 
 ### Roles
 
-| Role | Description |
-|------|-------------|
-| `GUEST` | Default — browse, book, review, message |
-| `HOST` | Manage listings, view host dashboard, receive bookings |
-| `ADMIN` | Full system access |
+| Role    | Description                                            |
+| ------- | ------------------------------------------------------ |
+| `GUEST` | Default — browse, book, review, message                |
+| `HOST`  | Manage listings, view host dashboard, receive bookings |
+| `ADMIN` | Full system access                                     |
 
 ---
 
@@ -568,6 +578,6 @@ This project is proprietary software. All rights reserved.
 
 <div align="center">
 
-Built with ❤️ using [NestJS](https://nestjs.com) · Deployed on [Vercel](https://vercel.com)
+Built by Mobarok · Built with ❤️ using [NestJS](https://nestjs.com) · Deployed on [Vercel](https://vercel.com)
 
 </div>
