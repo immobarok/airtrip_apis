@@ -75,8 +75,17 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     try {
       const message = await this.messagingService.sendMessage(userId, dto.conversationId, dto.content);
       
-      // Broadcast to all users in the conversation room
-      this.server.to(dto.conversationId).emit('newMessage', message);
+      // Get conversation participants to emit directly to their sockets
+      const prisma = (this.messagingService as any).prisma;
+      const conv = await prisma.conversation.findUnique({ where: { id: dto.conversationId }});
+      
+      if (conv) {
+        const p1Socket = this.userSockets.get(conv.participant1);
+        const p2Socket = this.userSockets.get(conv.participant2);
+
+        if (p1Socket) this.server.to(p1Socket).emit('newMessage', message);
+        if (p2Socket) this.server.to(p2Socket).emit('newMessage', message);
+      }
       
       return { status: 'success', data: message };
     } catch (error) {
