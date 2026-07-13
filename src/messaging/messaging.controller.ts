@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Param, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Req, UseGuards } from '@nestjs/common';
 import { MessagingService } from './messaging.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 
 @Controller('messaging')
+@UseGuards(JwtAuthGuard)
 export class MessagingController {
   constructor(private readonly messagingService: MessagingService) {}
 
@@ -20,5 +22,14 @@ export class MessagingController {
   @Get('conversations/:id/messages')
   getConversationMessages(@Req() req: any, @Param('id') conversationId: string) {
     return this.messagingService.getConversationMessages(req.user.id, conversationId);
+  }
+
+  @Post('conversations/:id/messages')
+  sendMessage(
+    @Req() req: any,
+    @Param('id') conversationId: string,
+    @Body('content') content: string,
+  ) {
+    return this.messagingService.sendMessage(req.user.id, conversationId, content);
   }
 }
