@@ -42,26 +42,26 @@ export class PropertiesService {
           description: createPropertyDto.description,
           propertyType: createPropertyDto.propertyType,
           roomType: createPropertyDto.roomType,
-          
+
           addressLine1: createPropertyDto.address,
           city: createPropertyDto.city,
           stateProvince: createPropertyDto.state,
           postalCode: createPropertyDto.postal,
           country: createPropertyDto.country,
-          
+
           maxGuests: createPropertyDto.guests ?? 1,
           bedrooms: createPropertyDto.bedrooms ?? 0,
           beds: createPropertyDto.beds ?? 1,
           bathrooms: createPropertyDto.bathrooms ?? 1,
-          
+
           basePricePerNight: createPropertyDto.price,
           cleaningFee: createPropertyDto.cleaningFee ?? 0,
-          
+
           amenities: createPropertyDto.amenities ?? [],
           instantBook: createPropertyDto.instantBook ?? false,
           latitude: createPropertyDto.latitude,
           longitude: createPropertyDto.longitude,
-          
+
           status,
           publishedAt: status === 'published' ? new Date() : null,
 
@@ -87,7 +87,6 @@ export class PropertiesService {
     }
   }
 
-  // TODO: Add other methods like findAll, findOne, update, remove
 
   async getAllProperties(query: GetPropertiesDto) {
     const {
@@ -178,7 +177,6 @@ export class PropertiesService {
       take: 6,
     });
 
-    // For each top destination, fetch the cover photo of its most popular property
     const destinations = await Promise.all(
       grouped.map(async (group) => {
         const topProperty = await this.prisma.listing.findFirst({
@@ -436,21 +434,21 @@ export class PropertiesService {
     if (updatePropertyDto.description !== undefined) data.description = updatePropertyDto.description;
     if (updatePropertyDto.propertyType !== undefined) data.propertyType = updatePropertyDto.propertyType;
     if (updatePropertyDto.roomType !== undefined) data.roomType = updatePropertyDto.roomType;
-    
+
     if (updatePropertyDto.address !== undefined) data.addressLine1 = updatePropertyDto.address;
     if (updatePropertyDto.city !== undefined) data.city = updatePropertyDto.city;
     if (updatePropertyDto.state !== undefined) data.stateProvince = updatePropertyDto.state;
     if (updatePropertyDto.postal !== undefined) data.postalCode = updatePropertyDto.postal;
     if (updatePropertyDto.country !== undefined) data.country = updatePropertyDto.country;
-    
+
     if (updatePropertyDto.guests !== undefined) data.maxGuests = updatePropertyDto.guests;
     if (updatePropertyDto.bedrooms !== undefined) data.bedrooms = updatePropertyDto.bedrooms;
     if (updatePropertyDto.beds !== undefined) data.beds = updatePropertyDto.beds;
     if (updatePropertyDto.bathrooms !== undefined) data.bathrooms = updatePropertyDto.bathrooms;
-    
+
     if (updatePropertyDto.price !== undefined) data.basePricePerNight = updatePropertyDto.price;
     if (updatePropertyDto.cleaningFee !== undefined) data.cleaningFee = updatePropertyDto.cleaningFee;
-    
+
     if (updatePropertyDto.amenities !== undefined) data.amenities = updatePropertyDto.amenities;
     if (updatePropertyDto.instantBook !== undefined) data.instantBook = updatePropertyDto.instantBook;
     if (updatePropertyDto.latitude !== undefined) data.latitude = updatePropertyDto.latitude;
@@ -460,9 +458,9 @@ export class PropertiesService {
       const status = updatePropertyDto.status.toLowerCase() === 'published' ? 'published' : 'draft';
       data.status = status;
       if (status === 'published') {
-         data.publishedAt = new Date();
+        data.publishedAt = new Date();
       } else {
-         data.publishedAt = null;
+        data.publishedAt = null;
       }
     }
 
@@ -517,7 +515,6 @@ export class PropertiesService {
       throw new ForbiddenException('You can only delete your own properties');
     }
 
-    // This performs a hard delete. In a real app, you might want to implement soft deletes
     await this.prisma.listing.delete({
       where: { id: listingId },
     });
@@ -542,11 +539,9 @@ export class PropertiesService {
       throw new BadRequestException('No files provided');
     }
 
-    // Upload all files to Cloudinary in parallel
     const uploadPromises = files.map(file => this.cloudinary.uploadFile(file, 'airtrip_properties'));
     const uploadResults = await Promise.all(uploadPromises);
 
-    // Determine the next display order
     const lastPhoto = await this.prisma.listingPhoto.findFirst({
       where: { listingId },
       orderBy: { displayOrder: 'desc' },
@@ -579,7 +574,6 @@ export class PropertiesService {
   }
 
   async getPropertyAvailability(listingId: string) {
-    // Get all dates blocked by the host
     const blockedDates = await this.prisma.listingAvailability.findMany({
       where: {
         listingId,
@@ -590,8 +584,6 @@ export class PropertiesService {
       }
     });
 
-    // Get all dates from active bookings (CONFIRMED or PENDING)
-    // We only need bookings in the future or currently ongoing
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -611,12 +603,11 @@ export class PropertiesService {
       }
     });
 
-    // Convert bookings to an array of dates
     const bookedDatesArr: Date[] = [];
     for (const booking of activeBookings) {
       const currentDate = new Date(booking.checkInDate);
       const endDate = new Date(booking.checkOutDate);
-      
+
       while (currentDate < endDate) {
         bookedDatesArr.push(new Date(currentDate));
         currentDate.setDate(currentDate.getDate() + 1);
@@ -644,9 +635,8 @@ export class PropertiesService {
 
     const operations = dateStrings.map(dateStr => {
       const date = new Date(dateStr);
-      // Strip time part
-      date.setUTCHours(0,0,0,0);
-      
+      date.setUTCHours(0, 0, 0, 0);
+
       return this.prisma.listingAvailability.upsert({
         where: {
           listingId_date: {
@@ -685,11 +675,10 @@ export class PropertiesService {
 
     const dates = dateStrings.map(d => {
       const date = new Date(d);
-      date.setUTCHours(0,0,0,0);
+      date.setUTCHours(0, 0, 0, 0);
       return date;
     });
 
-    // We can just delete the rows or set them to true. Deleting is cleaner if there's no price override.
     await this.prisma.listingAvailability.deleteMany({
       where: {
         listingId,

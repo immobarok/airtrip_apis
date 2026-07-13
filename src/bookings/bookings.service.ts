@@ -256,4 +256,61 @@ export class BookingsService {
       data: { status: dto.status },
     });
   }
+
+  async getHostStatistics(hostId: string) {
+    const activeStatuses = [BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN, BookingStatus.CHECKED_OUT];
+    
+    // Total active bookings
+    const totalBookings = await this.prisma.booking.count({
+      where: {
+        hostId,
+        status: { in: activeStatuses },
+      },
+    });
+
+    // Total Properties
+    const totalProperties = await this.prisma.listing.count({
+      where: { hostId },
+    });
+
+    // Total Earnings (all time)
+    const bookings = await this.prisma.booking.findMany({
+      where: { hostId, status: { in: activeStatuses } },
+      select: { totalAmount: true, createdAt: true },
+    });
+
+    const totalEarnings = bookings.reduce((sum, b) => sum + Number(b.totalAmount), 0);
+
+    // Monthly Earnings (current year)
+    const currentYear = new Date().getFullYear();
+    const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+      name: new Date(currentYear, i, 1).toLocaleString('default', { month: 'short' }),
+      revenue: 0,
+    }));
+
+    bookings.forEach(b => {
+      if (b.createdAt.getFullYear() === currentYear) {
+        monthlyData[b.createdAt.getMonth()].revenue += Number(b.totalAmount);
+      }
+    });
+
+    // Recent Bookings
+    const recentBookings = await this.prisma.booking.findMany({
+      where: { hostId },
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        guest: { select: { firstName: true, lastName: true, avatarUrl: true } },
+        listing: { select: { title: true } },
+      }
+    });
+
+    return {
+      totalEarnings,
+      totalBookings,
+      totalProperties,
+      monthlyData,
+      recentBookings,
+    };
+  }
 }

@@ -29,6 +29,11 @@ export class BookingsController {
     return this.bookingsService.getHostBookings(userId, query);
   }
 
+  @Get('host/statistics')
+  getHostStatistics(@CurrentUser('id') userId: string) {
+    return this.bookingsService.getHostStatistics(userId);
+  }
+
   @Get(':id')
   findOne(
     @Param('id') id: string,
