@@ -92,4 +92,29 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       return { status: 'error', message: error.message };
     }
   }
+  @SubscribeMessage('typing')
+  async handleTyping(@ConnectedSocket() client: Socket, @MessageBody() data: { conversationId: string, isTyping: boolean }) {
+    const userId = client.data.userId;
+    if (!userId) return;
+
+    try {
+      const prisma = (this.messagingService as any).prisma;
+      const conv = await prisma.conversation.findUnique({ where: { id: data.conversationId }});
+      
+      if (conv) {
+        const receiverId = userId === conv.participant1 ? conv.participant2 : conv.participant1;
+        const receiverSocketId = this.userSockets.get(receiverId);
+
+        if (receiverSocketId) {
+          this.server.to(receiverSocketId).emit('typing', {
+            conversationId: data.conversationId,
+            userId,
+            isTyping: data.isTyping
+          });
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error handling typing event: ${error.message}`);
+    }
+  }
 }
