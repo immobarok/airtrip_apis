@@ -13,6 +13,7 @@ import { SendMessageDto } from './dto/send-message.dto';
 import * as jwt from 'jsonwebtoken';
 import { Logger } from '@nestjs/common';
 
+
 @WebSocketGateway({
   cors: {
     origin: '*',
