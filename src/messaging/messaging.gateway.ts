@@ -147,10 +147,32 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   }
 
   @SubscribeMessage('endCall')
-  async handleEndCall(@ConnectedSocket() client: Socket, @MessageBody() data: { to: string }) {
+  async handleEndCall(@ConnectedSocket() client: Socket, @MessageBody() data: { to: string, conversationId?: string, durationSeconds?: number, isMissed?: boolean }) {
     const receiverSocketId = this.userSockets.get(data.to);
     if (receiverSocketId) {
       this.server.to(receiverSocketId).emit('callEnded');
+    }
+
+    // Auto-generate a chat message for the call log
+    if (data.conversationId) {
+      try {
+        let content = '';
+        if (data.isMissed) {
+          content = "📞 Missed Audio Call";
+        } else {
+          const mins = Math.floor((data.durationSeconds || 0) / 60);
+          const secs = (data.durationSeconds || 0) % 60;
+          const durationStr = `${mins > 0 ? `${mins}m ` : ''}${secs}s`;
+          content = `📞 Audio Call Ended (Duration: ${durationStr})`;
+        }
+        
+        const message = await this.messagingService.sendMessage(client.data.userId, data.conversationId, content);
+        
+        if (receiverSocketId) this.server.to(receiverSocketId).emit('newMessage', message);
+        this.server.to(client.id).emit('newMessage', message);
+      } catch (e) {
+        this.logger.error("Failed to save call log message: " + e.message);
+      }
     }
   }
 }
