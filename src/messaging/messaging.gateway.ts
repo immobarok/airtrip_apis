@@ -117,4 +117,40 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       this.logger.error(`Error handling typing event: ${error.message}`);
     }
   }
+
+  @SubscribeMessage('callUser')
+  async handleCallUser(@ConnectedSocket() client: Socket, @MessageBody() data: { userToCall: string, signalData: any, from: string, conversationId: string }) {
+    const receiverSocketId = this.userSockets.get(data.userToCall);
+    if (receiverSocketId) {
+      this.server.to(receiverSocketId).emit('incomingCall', {
+        signal: data.signalData,
+        from: data.from,
+        conversationId: data.conversationId
+      });
+    }
+  }
+
+  @SubscribeMessage('answerCall')
+  async handleAnswerCall(@ConnectedSocket() client: Socket, @MessageBody() data: { to: string, signal: any }) {
+    const callerSocketId = this.userSockets.get(data.to);
+    if (callerSocketId) {
+      this.server.to(callerSocketId).emit('callAccepted', data.signal);
+    }
+  }
+
+  @SubscribeMessage('iceCandidate')
+  async handleIceCandidate(@ConnectedSocket() client: Socket, @MessageBody() data: { to: string, candidate: any }) {
+    const receiverSocketId = this.userSockets.get(data.to);
+    if (receiverSocketId) {
+      this.server.to(receiverSocketId).emit('iceCandidate', data.candidate);
+    }
+  }
+
+  @SubscribeMessage('endCall')
+  async handleEndCall(@ConnectedSocket() client: Socket, @MessageBody() data: { to: string }) {
+    const receiverSocketId = this.userSockets.get(data.to);
+    if (receiverSocketId) {
+      this.server.to(receiverSocketId).emit('callEnded');
+    }
+  }
 }
