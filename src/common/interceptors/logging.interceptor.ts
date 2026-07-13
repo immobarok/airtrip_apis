@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 /**
  * LoggingInterceptor - Production-grade request/response logging.
@@ -34,7 +34,7 @@ export class LoggingInterceptor implements NestInterceptor {
     const response = httpCtx.getResponse<Response>();
 
     const correlationId =
-      (request.headers['x-correlation-id'] as string) ?? uuidv4();
+      (request.headers['x-correlation-id'] as string) ?? randomUUID();
     const { method, originalUrl, ip } = request;
     const userAgent = request.get('user-agent') ?? 'unknown';
     const className = context.getClass().name;
