@@ -4,10 +4,14 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { GetBookingsDto } from './dto/get-bookings.dto';
 import { BookingStatus } from '@prisma/client';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class BookingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
 
   private generateBookingReference(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -232,6 +236,10 @@ export class BookingsService {
   async updateBookingStatus(bookingId: string, userId: string, dto: UpdateBookingStatusDto) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
+      include: {
+        guest: true,
+        listing: true,
+      },
     });
 
     if (!booking) {
@@ -251,10 +259,26 @@ export class BookingsService {
       throw new ForbiddenException('Guests can only cancel their bookings');
     }
 
-    return this.prisma.booking.update({
+    const updatedBooking = await this.prisma.booking.update({
       where: { id: bookingId },
       data: { status: dto.status },
     });
+
+    if (dto.status === BookingStatus.CONFIRMED && booking.status !== BookingStatus.CONFIRMED) {
+      await this.mailService.sendBookingConfirmationEmail(
+        booking.guest.email,
+        booking.guest.firstName,
+        booking.listing.title,
+        booking.id,
+        booking.checkInDate,
+        booking.checkOutDate,
+      ).catch(e => {
+        // Log the error but don't fail the request
+        console.error('Failed to send booking confirmation email:', e);
+      });
+    }
+
+    return updatedBooking;
   }
 
   async getHostStatistics(hostId: string) {

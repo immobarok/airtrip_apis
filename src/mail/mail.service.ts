@@ -68,4 +68,35 @@ export class MailService {
       `,
     });
   }
+
+  async sendBookingConfirmationEmail(
+    email: string,
+    userName: string,
+    propertyName: string,
+    bookingId: string,
+    checkInDate: Date,
+    checkOutDate: Date,
+  ) {
+    const tripUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/trips`;
+
+    await this.transporter.sendMail({
+      from: process.env.MAIL_FROM,
+      to: email,
+      subject: `Your booking for ${propertyName} is confirmed! 🎊`,
+      html: `
+        <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+          <h2>Hi ${userName},</h2>
+          <p>Great news! Your booking at <strong>${propertyName}</strong> has been confirmed by the host.</p>
+          <p><strong>Check-in:</strong> ${checkInDate.toLocaleDateString()}</p>
+          <p><strong>Check-out:</strong> ${checkOutDate.toLocaleDateString()}</p>
+          <br/>
+          <a href="${tripUrl}" style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+            View Your Trip
+          </a>
+          <br/><br/>
+          <p>Get ready for your next adventure with AirTrip!</p>
+        </div>
+      `,
+    });
+  }
 }
