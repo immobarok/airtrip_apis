@@ -41,4 +41,31 @@ export class MailService {
       `,
     });
   }
+  async sendReviewRequestEmail(
+    email: string,
+    userName: string,
+    propertyName: string,
+    bookingId: string,
+  ) {
+    const reviewUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/trips/${bookingId}/review`;
+
+    await this.transporter.sendMail({
+      from: process.env.MAIL_FROM,
+      to: email,
+      subject: `How was your trip to ${propertyName}? ✈️`,
+      html: `
+        <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+          <h2>Hi ${userName},</h2>
+          <p>We hope you had an amazing time at <strong>${propertyName}</strong>!</p>
+          <p>Your trip has just ended, and we would love to hear about your experience. Your feedback helps future travelers and helps hosts improve their service.</p>
+          <br/>
+          <a href="${reviewUrl}" style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+            Leave a Review
+          </a>
+          <br/><br/>
+          <p>Thank you for choosing AirTrip!</p>
+        </div>
+      `,
+    });
+  }
 }

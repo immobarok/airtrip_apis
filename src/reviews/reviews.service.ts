@@ -22,6 +22,15 @@ export class ReviewsService {
       throw new ForbiddenException('You can only review bookings where you were the guest');
     }
 
+    if (['CANCELLED_BY_GUEST', 'CANCELLED_BY_HOST', 'CANCELLED_BY_ADMIN'].includes(booking.status)) {
+      throw new BadRequestException('You cannot review a cancelled booking');
+    }
+
+    const now = new Date();
+    if (new Date(booking.checkOutDate) > now) {
+      throw new BadRequestException('You can only review a booking after the checkout date has passed');
+    }
+
     const existing = await this.prisma.review.findUnique({
       where: { bookingId: booking.id }
     });

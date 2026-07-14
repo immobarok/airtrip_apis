@@ -14,6 +14,7 @@ import {
   CorrelationIdMiddleware,
   HelmetHeadersMiddleware,
 } from './common/middleware';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
@@ -31,10 +32,12 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { WishlistsModule } from './wishlists/wishlists.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { SystemModule } from './system/system.module';
+import { CronModule } from './cron/cron.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     RedisModule,
@@ -48,6 +51,7 @@ import { SystemModule } from './system/system.module';
     WishlistsModule,
     MessagingModule,
     SystemModule,
+    CronModule,
   ],
   controllers: [AppController],
   providers: [
