@@ -91,7 +91,9 @@ export class PropertiesService {
   async getAllProperties(query: GetPropertiesDto) {
     const {
       page = 1, limit = 10, city, country,
-      propertyType, roomType, minPrice, maxPrice, sortBy
+      propertyType, roomType, minPrice, maxPrice,
+      minBedrooms, minBeds, minBathrooms, minGuests,
+      amenities, sortBy,
     } = query;
 
     const skip = (page - 1) * limit;
@@ -99,6 +101,8 @@ export class PropertiesService {
     const where: any = {};
     if (city) where.city = { contains: city, mode: 'insensitive' };
     if (country) where.country = country;
+
+    // ─── Property Type ──────────────────────────────────────────────────────────
     if (propertyType) {
       if (propertyType.includes(',')) {
         where.propertyType = { in: propertyType.split(',').map(s => s.trim()) };
@@ -106,12 +110,35 @@ export class PropertiesService {
         where.propertyType = propertyType;
       }
     }
-    if (roomType) where.roomType = roomType;
 
+    // ─── Room Type (supports comma-separated multi-value) ──────────────────────
+    if (roomType) {
+      if (roomType.includes(',')) {
+        where.roomType = { in: roomType.split(',').map(s => s.trim()) };
+      } else {
+        where.roomType = roomType;
+      }
+    }
+
+    // ─── Price ──────────────────────────────────────────────────────────────────
     if (minPrice || maxPrice) {
       where.basePricePerNight = {};
       if (minPrice) where.basePricePerNight.gte = minPrice;
       if (maxPrice) where.basePricePerNight.lte = maxPrice;
+    }
+
+    // ─── Rooms & Beds ───────────────────────────────────────────────────────────
+    if (minBedrooms !== undefined) where.bedrooms = { gte: minBedrooms };
+    if (minBeds !== undefined) where.beds = { gte: minBeds };
+    if (minBathrooms !== undefined) where.bathrooms = { gte: minBathrooms };
+    if (minGuests !== undefined) where.maxGuests = { gte: minGuests };
+
+    // ─── Amenities (all supplied amenities must be present) ────────────────────
+    if (amenities) {
+      const amenityList = amenities.split(',').map(a => a.trim()).filter(Boolean);
+      if (amenityList.length > 0) {
+        where.amenities = { hasEvery: amenityList };
+      }
     }
 
     // Usually we only show active/published properties to public
