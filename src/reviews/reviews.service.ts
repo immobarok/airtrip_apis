@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { HostResponseDto } from './dto/host-response.dto';
@@ -6,12 +11,12 @@ import { GetReviewsDto } from './dto/get-reviews.dto';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async createReview(userId: string, dto: CreateReviewDto) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: dto.bookingId },
-      include: { listing: true }
+      include: { listing: true },
     });
 
     if (!booking) {
@@ -19,20 +24,30 @@ export class ReviewsService {
     }
 
     if (booking.guestId !== userId) {
-      throw new ForbiddenException('You can only review bookings where you were the guest');
+      throw new ForbiddenException(
+        'You can only review bookings where you were the guest',
+      );
     }
 
-    if (['CANCELLED_BY_GUEST', 'CANCELLED_BY_HOST', 'CANCELLED_BY_ADMIN'].includes(booking.status)) {
+    if (
+      [
+        'CANCELLED_BY_GUEST',
+        'CANCELLED_BY_HOST',
+        'CANCELLED_BY_ADMIN',
+      ].includes(booking.status)
+    ) {
       throw new BadRequestException('You cannot review a cancelled booking');
     }
 
     const now = new Date();
     if (new Date(booking.checkOutDate) > now) {
-      throw new BadRequestException('You can only review a booking after the checkout date has passed');
+      throw new BadRequestException(
+        'You can only review a booking after the checkout date has passed',
+      );
     }
 
     const existing = await this.prisma.review.findUnique({
-      where: { bookingId: booking.id }
+      where: { bookingId: booking.id },
     });
 
     if (existing) {
@@ -54,7 +69,7 @@ export class ReviewsService {
         value: dto.value,
         comment: dto.comment,
         isPublic: true,
-      }
+      },
     });
 
     await this.updateListingRating(booking.listingId);
@@ -76,16 +91,21 @@ export class ReviewsService {
         take: limit,
         include: {
           reviewer: {
-            select: { id: true, firstName: true, lastName: true, avatarUrl: true }
-          }
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatarUrl: true,
+            },
+          },
         },
-        orderBy: { createdAt: 'desc' }
-      })
+        orderBy: { createdAt: 'desc' },
+      }),
     ]);
 
     return {
       data: reviews,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
 
@@ -103,32 +123,43 @@ export class ReviewsService {
         take: limit,
         include: {
           reviewer: {
-            select: { id: true, firstName: true, lastName: true, avatarUrl: true }
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatarUrl: true,
+            },
           },
           listing: {
-            select: { id: true, title: true }
-          }
+            select: { id: true, title: true },
+          },
         },
-        orderBy: { createdAt: 'desc' }
-      })
+        orderBy: { createdAt: 'desc' },
+      }),
     ]);
 
     return {
       data: reviews,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
 
-  async addHostResponse(reviewId: string, hostId: string, dto: HostResponseDto) {
+  async addHostResponse(
+    reviewId: string,
+    hostId: string,
+    dto: HostResponseDto,
+  ) {
     const review = await this.prisma.review.findUnique({
       where: { id: reviewId },
-      include: { listing: true }
+      include: { listing: true },
     });
 
     if (!review) throw new NotFoundException('Review not found');
 
     if (review.listing.hostId !== hostId) {
-      throw new ForbiddenException('You can only respond to reviews on your own properties');
+      throw new ForbiddenException(
+        'You can only respond to reviews on your own properties',
+      );
     }
 
     if (review.hostResponse) {
@@ -139,8 +170,8 @@ export class ReviewsService {
       where: { id: reviewId },
       data: {
         hostResponse: dto.response,
-        hostRespondedAt: new Date()
-      }
+        hostRespondedAt: new Date(),
+      },
     });
   }
 
@@ -148,7 +179,7 @@ export class ReviewsService {
     const stats = await this.prisma.review.aggregate({
       where: { listingId, isPublic: true },
       _avg: { overallRating: true },
-      _count: { id: true }
+      _count: { id: true },
     });
 
     const averageRating = stats._avg.overallRating || 0;
@@ -158,24 +189,30 @@ export class ReviewsService {
       where: { id: listingId },
       data: {
         averageRating: Number(averageRating.toFixed(1)),
-        totalReviews
-      }
+        totalReviews,
+      },
     });
 
-    const listing = await this.prisma.listing.findUnique({ where: { id: listingId } });
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+    });
     if (listing) {
       const hostStats = await this.prisma.review.aggregate({
         where: { revieweeId: listing.hostId, isPublic: true },
         _avg: { overallRating: true },
-        _count: { id: true }
+        _count: { id: true },
       });
-      await this.prisma.hostProfile.update({
-        where: { userId: listing.hostId },
-        data: {
-          averageRating: Number((hostStats._avg.overallRating || 0).toFixed(1)),
-          totalReviews: hostStats._count.id
-        }
-      }).catch(() => { });
+      await this.prisma.hostProfile
+        .update({
+          where: { userId: listing.hostId },
+          data: {
+            averageRating: Number(
+              (hostStats._avg.overallRating || 0).toFixed(1),
+            ),
+            totalReviews: hostStats._count.id,
+          },
+        })
+        .catch(() => {});
     }
   }
 }

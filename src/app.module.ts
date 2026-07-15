@@ -33,6 +33,7 @@ import { WishlistsModule } from './wishlists/wishlists.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { SystemModule } from './system/system.module';
 import { CronModule } from './cron/cron.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { CronModule } from './cron/cron.module';
     MessagingModule,
     SystemModule,
     CronModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [
