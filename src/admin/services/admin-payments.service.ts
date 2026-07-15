@@ -10,7 +10,7 @@ export class AdminPaymentsService {
 
     let whereClause: any = {};
     if (status) {
-      whereClause.status = status; // PAYMENT_STATUS enum handled by Prisma
+      whereClause.paymentStatus = status; // PAYMENT_STATUS enum handled by Prisma
     }
 
     const [payments, total] = await Promise.all([

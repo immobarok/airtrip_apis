@@ -29,6 +29,13 @@ export class AdminUsersService {
           isAdmin: true,
           isActive: true,
           createdAt: true,
+          _count: {
+            select: {
+              listings: true,
+              bookingsAsGuest: true,
+              bookingsAsHost: true,
+            }
+          }
         },
       }),
       this.prisma.user.count({ where: whereClause }),
