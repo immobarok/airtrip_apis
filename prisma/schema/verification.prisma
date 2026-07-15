@@ -1,0 +1,15 @@
+model VerificationDocument {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentUrl String   @map("document_url") @db.VarChar(500)
+  documentType String  @map("document_type") @db.VarChar(50) // passport, id_card
+  status      VerificationStatus @default(PENDING)
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@index([userId])
+  @@index([status])
+  @@map("verification_documents")
+}

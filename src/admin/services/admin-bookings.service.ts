@@ -46,7 +46,7 @@ export class AdminBookingsService {
         guest: { select: { id: true, firstName: true, lastName: true, email: true } },
         host: { select: { id: true, firstName: true, lastName: true, email: true } },
         listing: { select: { id: true, title: true } },
-        payment: true,
+        payments: true,
       },
     });
 

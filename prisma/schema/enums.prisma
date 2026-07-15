@@ -38,3 +38,23 @@ enum NotificationType {
   LISTING_REJECTED    @map("listing_rejected")
   SYSTEM_ANNOUNCEMENT @map("system_announcement")
 }
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

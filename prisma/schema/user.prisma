@@ -59,6 +59,10 @@ model User {
   systemSettings SystemSetting[]
   mediaItems     Media[]
 
+  supportTickets SupportTicket[] @relation("UserSupportTickets")
+  ticketMessages TicketMessage[]
+  verificationDocs VerificationDocument[]
+
   createdAdmins AdminProfile[] @relation("CreatedAdmins")
 
   @@index([email])

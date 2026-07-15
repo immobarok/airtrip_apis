@@ -17,6 +17,15 @@ import { AdminSettingsService } from './services/admin-settings.service';
 import { AdminReviewsService } from './services/admin-reviews.service';
 import { AdminAuditLogsService } from './services/admin-audit-logs.service';
 
+import { AdminSupportController } from './controllers/admin-support.controller';
+import { AdminPromotionsController } from './controllers/admin-promotions.controller';
+import { AdminVerificationsController } from './controllers/admin-verifications.controller';
+import { AdminAnnouncementsController } from './controllers/admin-announcements.controller';
+import { AdminSupportService } from './services/admin-support.service';
+import { AdminPromotionsService } from './services/admin-promotions.service';
+import { AdminVerificationsService } from './services/admin-verifications.service';
+import { AdminAnnouncementsService } from './services/admin-announcements.service';
+
 @Module({
   imports: [PrismaModule],
   controllers: [
@@ -28,6 +37,10 @@ import { AdminAuditLogsService } from './services/admin-audit-logs.service';
     AdminSettingsController,
     AdminReviewsController,
     AdminAuditLogsController,
+    AdminSupportController,
+    AdminPromotionsController,
+    AdminVerificationsController,
+    AdminAnnouncementsController,
   ],
   providers: [
     AdminAnalyticsService,
@@ -38,6 +51,10 @@ import { AdminAuditLogsService } from './services/admin-audit-logs.service';
     AdminSettingsService,
     AdminReviewsService,
     AdminAuditLogsService,
+    AdminSupportService,
+    AdminPromotionsService,
+    AdminVerificationsService,
+    AdminAnnouncementsService,
   ],
 })
 export class AdminModule {}

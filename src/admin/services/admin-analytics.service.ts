@@ -27,7 +27,7 @@ export class AdminAnalyticsService {
             amount: true,
           },
           where: {
-            status: 'COMPLETED', // Use Prisma enum formatting if applicable
+            paymentStatus: 'COMPLETED', // Use Prisma enum formatting if applicable
           },
         }),
       ]);
@@ -38,7 +38,7 @@ export class AdminAnalyticsService {
       activeListings,
       pendingListings,
       bookingsThisMonth,
-      totalRevenue: totalRevenueResult._sum.amount || 0,
+      totalRevenue: totalRevenueResult._sum?.amount || 0,
     };
   }
 }
